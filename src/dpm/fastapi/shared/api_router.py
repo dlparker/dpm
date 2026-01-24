@@ -25,7 +25,7 @@ class TAPAPIService:
         return self._router
 
     async def get_tap_focus(self):
-        from vboss.fastapi.server import TAPFocus
+        from dpm.fastapi.server import TAPFocus
         if self.server.tap_focus is None:
             domain = next(iter(self.domain_catalog.pmdb_domains))
             db = self.domain_catalog.pmdb_domains[domain].db
@@ -38,7 +38,7 @@ class TAPAPIService:
                                 uuid=self.server.tap_focus.focus_id)
 
     async def set_tap_task(self, task_id:int):
-        from vboss.fastapi.server import TAPFocus
+        from dpm.fastapi.server import TAPFocus
         if self.server.tap_focus is None:
             db = self.domain_catalog.pmdb_domains[domain].db
             f_dict = dict(domain=domain, url_name="pm:", task_id=task_id)

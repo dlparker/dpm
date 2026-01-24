@@ -11,7 +11,7 @@ import shutil
 import json
 import pytest
 
-from vboss.store.models import (ModelDB, TaskRecord, ProjectRecord, PhaseRecord,
+from dpm.store.models import (ModelDB, TaskRecord, ProjectRecord, PhaseRecord,
                                 FilterWrapper, Task, Project, Phase)
 
 

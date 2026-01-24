@@ -11,9 +11,10 @@ logger = logging.getLogger("UIRouter")
 
 class UIRouter:
 
-    def __init__(self, server):
+    def __init__(self, server, dpm_manager):
         self.server = server
-        self.domain_catalog = server.domain_catalog
+        self.dpm_manager = dpm_manager
+        self.domain_catalog = dpm_manager.domain_catalog
         self.templates = server.templates
 
     async def _get_status_data(self):
@@ -26,7 +27,6 @@ class UIRouter:
 
         @router.get("/", response_class=HTMLResponse, name="ui:home")
         async def home(request: Request):
-            """Render the home page."""
             return self.templates.TemplateResponse(
                 "home.html",
                 {"request": request}
@@ -34,7 +34,6 @@ class UIRouter:
 
         @router.get("/status-partial", response_class=HTMLResponse, name="ui:status-partial")
         async def status_partial(request: Request):
-            """Return partial HTML for status display (for HTMX)."""
             status_data = await self._get_status_data()
             return self.templates.TemplateResponse(
                 "status_partial.html",

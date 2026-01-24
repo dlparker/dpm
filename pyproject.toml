@@ -3,10 +3,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/vboss"]
+packages = ["src/dpm"]
 
 [project]
-name = "vboss"
+name = "dpm"
 version = "0.1.0"
 description = "Research project for voice controlled UI for project tool"
 requires-python = ">=3.12"

@@ -4,12 +4,12 @@ import logging
 import argparse
 import uvicorn
 import json
-from vboss.fastapi.server import VBossServer
+from dpm.fastapi.server import DPMServer
 
 
 async def main():
     parser = argparse.ArgumentParser(
-        description="VBoss Server",
+        description="DPM Server",
     )
 
     default_config = Path(__file__).parent.parent / "example_dbs" / "config.json"
@@ -20,12 +20,12 @@ async def main():
         help=f'Path to config file (default: {default_config})'
     )
     args = parser.parse_args()
-    server = VBossServer(args.config)
+    server = DPMServer(args.config)
     config = uvicorn.Config(
         server.app,
         host='0.0.0.0',
         port=8080,
-        log_level=logging.WARNING
+        log_level=logging.INFO
     )
     
     server = uvicorn.Server(config)

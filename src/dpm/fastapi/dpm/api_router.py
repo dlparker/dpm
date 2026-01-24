@@ -6,7 +6,7 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from vboss.store.models import ModelDB
+from dpm.store.models import ModelDB
 
 
 # ============================================================================
@@ -113,10 +113,10 @@ class TAPFocusResponse(BaseModel):
 
 class PMDBAPIService:
 
-    def __init__(self, server, prefix_tag="pm_api"):
+    def __init__(self, server, dpm_manager, prefix_tag="pm_api"):
         self.server = server
         self.prefix_tag = prefix_tag
-        self.domain_catalog = server.domain_catalog
+        self.dpm_manager = dpm_manager
         self._router = APIRouter(tags=[prefix_tag])
 
     def become_router(self) -> APIRouter:
@@ -148,34 +148,8 @@ class PMDBAPIService:
 
     def _get_db(self, domain: str) -> ModelDB:
         if domain == "default":
-            domain = next(iter(self.domain_catalog.pmdb_domains))
-        return self.domain_catalog.pmdb_domains[domain].db
-
-    async def get_tap_focus(self):
-        from vboss.fastapi.server import TAPFocus
-        if self.server.tap_focus is None:
-            domain = next(iter(self.domain_catalog.pmdb_domains))
-            db = self.domain_catalog.pmdb_domains[domain].db
-            f_dict = dict(domain=domain, url_name="pm:", task_id=1)
-            focus = self.server.tap_focus = TAPFocus(state=f_dict)
-        else:
-            focus = self.server.tap_focus
-            db = self.domain_catalog.pmdb_domains[focus.state['domain']].db
-        return TAPFocusResponse(task_id=self.server.tap_focus.state['task_id'],
-                                uuid=self.server.tap_focus.focus_id)
-
-    async def set_tap_task(self, task_id:int):
-        from vboss.fastapi.server import TAPFocus
-        if self.server.tap_focus is None:
-            db = self.domain_catalog.pmdb_domains[domain].db
-            f_dict = dict(domain=domain, url_name="pm:", task_id=task_id)
-            focus = self.server.tap_focus = TAPFocus(state=f_dict)
-        else:
-            focus = self.server.tap_focus
-            focus.state['task_id'] = task_id
-            db = self.domain_catalog.pmdb_domains[focus.state['domain']].db
-        return TAPFocusResponse(task_id=self.server.tap_focus.state['task_id'],
-                                uuid=self.server.tap_focus.focus_id)
+            domain = self.dpm_manager.get_default_domain()
+        return self.dpm_manager.get_db_for_domain(domain)
 
                                
     # ========================================================================
@@ -185,10 +159,9 @@ class PMDBAPIService:
     async def list_domains(self):
         return [DomainResponse(name=name,
                                filepath=str(item.db_path), description=item.description)
-                for name, item in self.domain_catalog.pmdb_domains.items()]
+                for name, item in self.dpm_manager.get_domains().items()]
 
     async def list_projects(self, domain: str, parent_id: Optional[int] = None):
-        """List all projects, optionally filtered by parent."""
         db = self._get_db(domain)
         if parent_id is not None:
             projects = db.get_projects_by_parent_id(parent_id)

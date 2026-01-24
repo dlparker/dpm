@@ -6,8 +6,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from vboss.store.models import ModelDB, DomainCatalog
-from vboss.fastapi.cantons.pm.api_router import PMDBAPIService
+from dpm.store.models import ModelDB, DomainCatalog
+from dpm.fastapi.cantons.pm.api_router import PMDBAPIService
 
 
 @pytest.fixture

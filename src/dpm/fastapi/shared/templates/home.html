@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto">
-    <h1 class="text-4xl font-bold mb-8">Welcome to CMDR</h1>
+    <h1 class="text-4xl font-bold mb-8">Welcome to DPM</h1>
 
     <!-- Status Card with auto-refresh -->
     <div class="card bg-base-200 shadow-xl mb-6">
@@ -12,7 +12,7 @@
             <h2 class="card-title">System Status</h2>
             <div
                 id="status-display"
-                hx-get="/ui/status-partial"
+                hx-get="{{ url_for('ui:status-partial') }}"
                 hx-trigger="load, every 1s"
                 hx-swap="innerHTML"
             >
@@ -29,11 +29,11 @@
         <div class="card-body">
             <h2 class="card-title">Navigation</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <a href="{{ url_for('pm:tap-task')}}" class="btn btn-outline btn-primary">
+                <a href="{{ url_for('pm:domains')}}" class="btn btn-outline btn-primary">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
                     </svg>
-                    TAP Task
+                    Domains
                 </a>
             </div>
         </div>

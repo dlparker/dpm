@@ -11,7 +11,7 @@ import shutil
 import json
 import pytest
 
-from vboss.store.task_db import (TaskDB, TaskRecord, ProjectRecord, PhaseRecord, FilterWrapper)
+from dpm.store.task_db import (TaskDB, TaskRecord, ProjectRecord, PhaseRecord, FilterWrapper)
 
 @pytest.fixture
 def create_db():

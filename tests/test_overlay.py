@@ -10,8 +10,8 @@ import os
 from pathlib import Path
 import pytest
 
-from vboss.store.task_db import TaskDB
-from vboss.store.models import ModelDB
+from dpm.store.task_db import TaskDB
+from dpm.store.models import ModelDB
 
 
 @pytest.fixture
