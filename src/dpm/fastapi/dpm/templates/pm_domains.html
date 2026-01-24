@@ -1,3 +1,8 @@
+{% extends "pm_base.html" %}
+
+{% block title %}Project Management Domains {% endblock %}
+
+{% block sb_main_content %}
 {% if domains %}
 <ul class="space-y-2">
     {% for domain in domains %}
@@ -31,3 +36,4 @@
     <span>No domains configured.</span>
 </div>
 {% endif %}
+{% endblock %}

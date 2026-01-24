@@ -59,10 +59,39 @@ class PMUIRouter:
                 {"name": name, "description": item.description}
                 for name, item in self.dpm_manager.get_domains().items()
             ]
-            return self.templates.TemplateResponse(
-                "pm_domains.html",
-                {"request": request, "domains": domains}
-            )
+            context = {"request": request, "domains": domains}
+            is_htmx = request.headers.get("HX-Request") == "true"
+            if is_htmx:
+                return self.templates.TemplateResponse(
+                    "pm_domains.html",
+                    context,
+                    block_name="sb_main_content"
+                )
+            else:
+                return self.templates.TemplateResponse(
+                    "pm_domains.html",
+                    context
+                )
+
+        @router.get("/nav_tree", response_class=HTMLResponse, name="pm:nav_tree")
+        async def pm_domains(request: Request):
+            domains = [
+                {"name": name, "description": item.description}
+                for name, item in self.dpm_manager.get_domains().items()
+            ]
+            context = {"request": request, "domains": domains}
+            is_htmx = request.headers.get("HX-Request") == "true"
+            if is_htmx:
+                return self.templates.TemplateResponse(
+                    "pm_domains.html",
+                    context,
+                    block_name="sb_main_content"
+                )
+            else:
+                return self.templates.TemplateResponse(
+                    "pm_domains.html",
+                    context
+                )
 
         @router.get("/{domain}/projects", response_class=HTMLResponse, name="pm:domain-projects")
         async def pm_projects(request: Request, domain: str):
@@ -105,16 +134,26 @@ class PMUIRouter:
             all_tasks = project.get_tasks()
             direct_tasks = [t for t in all_tasks if t.phase_id is None]
 
-            return self.templates.TemplateResponse(
-                "frags/pm_project_children.html",
-                {
-                    "request": request,
-                    "domain": domain,
-                    "project": project,
-                    "phases": phases,
-                    "tasks": direct_tasks
-                }
-            )
+            context = {
+                "request": request,
+                "domain": domain,
+                "project": project,
+                "phases": phases,
+                "tasks": direct_tasks
+            }
+
+            is_htmx = request.headers.get("HX-Request") == "true"
+            if is_htmx:
+                return self.templates.TemplateResponse(
+                    "pm_project_children.html",
+                    context,
+                    block_name="sb_main_content"
+                )
+            else:
+                return self.templates.TemplateResponse(
+                    "pm_project_children.html",
+                    context
+                )
 
         @router.get("/{domain}/phase/{phase_id}/tasks", response_class=HTMLResponse, name="pm:phase-tasks")
         async def pm_phase_tasks(request: Request, domain: str, phase_id: int):
@@ -128,15 +167,82 @@ class PMUIRouter:
                 raise HTTPException(status_code=404, detail="Phase not found")
 
             tasks = phase.get_tasks()
-            return self.templates.TemplateResponse(
-                "pm_tasks.html",
-                {
-                    "request": request,
-                    "domain": domain,
-                    "phase": phase,
-                    "tasks": tasks
-                }
-            )
+            context =  {
+                "request": request,
+                "domain": domain,
+                "phase": phase,
+                "tasks": tasks
+            }
+            is_htmx = request.headers.get("HX-Request") == "true"
+            if is_htmx:
+                return self.templates.TemplateResponse(
+                    "pm_tasks.html",
+                    context,
+                    block_name="sb_main_content"
+                )
+            else:
+                return self.templates.TemplateResponse(
+                    "pm_tasks.html",
+                    context,
+                )
+
+        @router.get("/{domain}/project/{project_id}", response_class=HTMLResponse, name="pm:project")
+        async def pm_phase_tasks(request: Request, domain: str, project_id: int):
+            if domain == 'default':
+                domain = self.dpm_manager.get_default_domain()
+                return RedirectResponse(url=request.url_for("pm:phase-tasks", domain=domain,
+                                                            project_id=project_id))            
+            db = self._get_db(domain)
+            project = db.get_project_by_id(project_id)
+            if not project:
+                raise HTTPException(status_code=404, detail="Project not found")
+
+            context =  {
+                "request": request,
+                "domain": domain,
+                "project": project,
+            }
+            is_htmx = request.headers.get("HX-Request") == "true"
+            if is_htmx:
+                return self.templates.TemplateResponse(
+                    "pm_project.html",
+                    context,
+                    block_name="sb_main_content"
+                )
+            else:
+                return self.templates.TemplateResponse(
+                    "pm_project.html",
+                    context,
+                )
+            
+        @router.get("/{domain}/phase/{phase_id}", response_class=HTMLResponse, name="pm:phase")
+        async def pm_phase_tasks(request: Request, domain: str, phase_id: int):
+            if domain == 'default':
+                domain = self.dpm_manager.get_default_domain()
+                return RedirectResponse(url=request.url_for("pm:phase-tasks", domain=domain,
+                                                            phase_id=phase_id))            
+            db = self._get_db(domain)
+            phase = db.get_phase_by_id(phase_id)
+            if not phase:
+                raise HTTPException(status_code=404, detail="Phase not found")
+
+            context =  {
+                "request": request,
+                "domain": domain,
+                "phase": phase,
+            }
+            is_htmx = request.headers.get("HX-Request") == "true"
+            if is_htmx:
+                return self.templates.TemplateResponse(
+                    "pm_phase.html",
+                    context,
+                    block_name="sb_main_content"
+                )
+            else:
+                return self.templates.TemplateResponse(
+                    "pm_phase.html",
+                    context,
+                )
 
         @router.get("/{domain}/task/{task_id}", response_class=HTMLResponse, name="pm:task-detail")
         async def pm_task(request: Request, domain: str, task_id: int):
@@ -149,14 +255,22 @@ class PMUIRouter:
             if not task:
                 raise HTTPException(status_code=404, detail="Task not found")
 
-            return self.templates.TemplateResponse(
-                "pm_task.html",
-                {
-                    "request": request,
-                    "domain": domain,
-                    "task": task
-                }
-            )
-
+            context = {
+                "request": request,
+                "domain": domain,
+                "task": task
+            }
+            is_htmx = request.headers.get("HX-Request") == "true"
+            if is_htmx:
+                return self.templates.TemplateResponse(
+                    "pm_task.html",
+                    context,
+                    block_name="sb_main_content"
+                )
+            else:
+                return self.templates.TemplateResponse(
+                    "pm_task.html",
+                    context
+                )
         
         return router

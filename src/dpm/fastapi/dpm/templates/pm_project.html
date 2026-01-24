@@ -1,0 +1,24 @@
+{% extends "pm_sb_base.html" %}
+
+{% block title %}Project Management Project {{project}} {% endblock %}
+
+{% block sb_main_content %}
+<div
+  hx-get="{{ url_for('pm:project-children', domain=domain, project_id=project.project_id) }}"
+  hx-target="#domain-{{domain}}-project-{{ project.project_id }}-children"
+  hx-swap="innerHTML"
+  hx-trigger="load"
+  >
+  <span class="badge badge-warning badge-outline">Project</span>
+  <span>{{ project.name }}</span>
+  {% if project.description %}
+  <span class="text-base-content/50 text-sm truncate max-w-xs">- {{ project.description }}</span>
+  {% endif %}
+</div>
+<div id="domain-{{domain}}-project-{{ project.project_id }}-children" class="tree-children tree-node">
+  <div class="flex items-center gap-2 p-2 text-base-content/50">
+    <span class="loading loading-spinner loading-sm"></span>
+    <span>Click to load...</span>
+  </div>
+</div>
+{% endblock %}

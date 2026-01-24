@@ -1,0 +1,24 @@
+{% extends "pm_sb_base.html" %}
+
+{% block title %}Project Management Project phase {{phase}} {% endblock %}
+
+{% block sb_main_content %}
+<div
+  hx-get="{{ url_for('pm:phase-tasks', domain=domain, phase_id=phase.phase_id) }}"
+  hx-target="#domain-{{domain}}-phase-{{ phase.phase_id }}-tasks"
+  hx-swap="innerHTML"
+  hx-trigger="load"
+  >
+  <span class="badge badge-warning badge-outline">Phase</span>
+  <span>{{ phase.name }}</span>
+  {% if phase.description %}
+  <span class="text-base-content/50 text-sm truncate max-w-xs">- {{ phase.description }}</span>
+  {% endif %}
+</div>
+<div id="domain-{{domain}}-phase-{{ phase.phase_id }}-tasks" class="tree-children tree-node">
+  <div class="flex items-center gap-2 p-2 text-base-content/50">
+    <span class="loading loading-spinner loading-sm"></span>
+    <span>Click to load...</span>
+  </div>
+</div>
+{% endblock %}

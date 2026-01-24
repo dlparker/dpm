@@ -1,5 +1,9 @@
-{# Shows phases and tasks for a project — using named routes via url_for #}
 
+{% extends "pm_base.html" %}
+
+{% block title %}Project Management Project items {% endblock %}
+
+{% block sb_main_content %}
 {% if phases or tasks %}
 <ul class="space-y-1">
     {# Phases section #}
@@ -21,7 +25,7 @@
                 <li>
                     <div
                         class="tree-toggle flex items-center gap-2 p-2 rounded-lg"
-                        hx-get="{{ url_for('pm:phase-tasks-partial', domain=domain, phase_id=phase.phase_id) }}"
+                        hx-get="{{ url_for('pm:phase-tasks', domain=domain, phase_id=phase.phase_id) }}"
                         hx-target="#domain-{{domain}}-phase-{{ phase.phase_id }}-tasks"
                         hx-swap="innerHTML"
                         hx-trigger="click once"
@@ -48,26 +52,8 @@
         </div>
     </li>
     {% endif %}
-
-    {# Direct tasks (not in a phase) #}
-    {% if tasks %}
-    <li>
-        <div
-            class="tree-toggle flex items-center gap-2 p-2 rounded-lg"
-            onclick="toggleTreeNode(this)"
-        >
-            <svg class="tree-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-            </svg>
-            <span class="badge badge-info">Tasks</span>
-            <span class="text-base-content/50 text-sm">({{ tasks|length }} direct)</span>
-        </div>
-        <div class="tree-children tree-node hidden">
-            {% include "pm_tasks_partial.html" %}
-        </div>
-    </li>
-    {% endif %}
 </ul>
 {% else %}
 <p class="text-base-content/50 italic p-2">No phases or tasks in this project.</p>
 {% endif %}
+{% endblock %}
