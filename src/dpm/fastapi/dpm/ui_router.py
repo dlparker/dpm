@@ -83,15 +83,91 @@ class PMUIRouter:
             is_htmx = request.headers.get("HX-Request") == "true"
             if is_htmx:
                 return self.templates.TemplateResponse(
-                    "pm_domains.html",
+                    "pm_nav_tree.html",
                     context,
                     block_name="sb_main_content"
                 )
             else:
                 return self.templates.TemplateResponse(
-                    "pm_domains.html",
+                    "pm_nav_tree.html",
                     context
                 )
+
+        # ====================================================================
+        # Nav Tree Routes — Compact versions for sidebar navigation
+        # ====================================================================
+
+        @router.get("/nav/{domain}/projects", response_class=HTMLResponse, name="pm:nav-domain-projects")
+        async def pm_nav_projects(request: Request, domain: str):
+            if domain == 'default':
+                domain = self.dpm_manager.get_default_domain()
+                return RedirectResponse(url=request.url_for("pm:nav-domain-projects", domain=domain))
+            db = self._get_db(domain)
+            projects = db.get_projects()
+            context = {
+                "request": request,
+                "domain": domain,
+                "projects": projects,
+            }
+            return self.templates.TemplateResponse(
+                "pm_nav_projects.html",
+                context,
+                block_name="sb_main_content"
+            )
+
+        @router.get("/nav/{domain}/project/{project_id}/children", response_class=HTMLResponse, name="pm:nav-project-children")
+        async def pm_nav_project_children(request: Request, domain: str, project_id: int):
+            if domain == 'default':
+                domain = self.dpm_manager.get_default_domain()
+                return RedirectResponse(url=request.url_for("pm:nav-project-children", domain=domain, project_id=project_id))
+            db = self._get_db(domain)
+            project = db.get_project_by_id(project_id)
+            if not project:
+                raise HTTPException(status_code=404, detail="Project not found")
+
+            phases = project.get_phases()
+            all_tasks = project.get_tasks()
+            direct_tasks = [t for t in all_tasks if t.phase_id is None]
+
+            context = {
+                "request": request,
+                "domain": domain,
+                "project": project,
+                "phases": phases,
+                "tasks": direct_tasks
+            }
+            return self.templates.TemplateResponse(
+                "pm_nav_project_children.html",
+                context,
+                block_name="sb_main_content"
+            )
+
+        @router.get("/nav/{domain}/phase/{phase_id}/tasks", response_class=HTMLResponse, name="pm:nav-phase-tasks")
+        async def pm_nav_phase_tasks(request: Request, domain: str, phase_id: int):
+            if domain == 'default':
+                domain = self.dpm_manager.get_default_domain()
+                return RedirectResponse(url=request.url_for("pm:nav-phase-tasks", domain=domain, phase_id=phase_id))
+            db = self._get_db(domain)
+            phase = db.get_phase_by_id(phase_id)
+            if not phase:
+                raise HTTPException(status_code=404, detail="Phase not found")
+
+            tasks = phase.get_tasks()
+            context = {
+                "request": request,
+                "domain": domain,
+                "phase": phase,
+                "tasks": tasks
+            }
+            return self.templates.TemplateResponse(
+                "pm_nav_tasks.html",
+                context,
+                block_name="sb_main_content"
+            )
+
+        # ====================================================================
+        # Main Content Routes — Full detail views
+        # ====================================================================
 
         @router.get("/{domain}/projects", response_class=HTMLResponse, name="pm:domain-projects")
         async def pm_projects(request: Request, domain: str):
