@@ -1,5 +1,6 @@
 from pathlib import Path
 from dataclasses import dataclass, field
+import os
 import uuid
 import time
 import json
@@ -37,7 +38,7 @@ class DPMManager:
     
 class DPMServer:
 
-    def __init__(self, config_path: str):
+    def __init__(self, config_path: os.PathLike):
         # Set up Jinja2 templates
         self.dpm_manager = DPMManager(config_path)
         

@@ -7,7 +7,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from dpm.store.models import ModelDB, DomainCatalog
-from dpm.fastapi.cantons.pm.api_router import PMDBAPIService
+from dpm.fastapi.dpm.api_router import PMDBAPIService
+from dpm.fastapi.server import DPMManager
 
 
 @pytest.fixture
@@ -38,9 +39,10 @@ def client():
     class FakeServer:
 
         def __init__(self, config_path):
-            self.domain_catalog = DomainCatalog.from_json_config(config_path)
-            
-    service = PMDBAPIService(FakeServer(config_path))
+            self.dpm_manager = DPMManager(config_path)
+
+    fake_server = FakeServer(config_path)        
+    service = PMDBAPIService(fake_server, fake_server.dpm_manager)
 
     # Create app with service router
     app = FastAPI()
