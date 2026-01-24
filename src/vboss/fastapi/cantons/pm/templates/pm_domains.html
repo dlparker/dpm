@@ -1,0 +1,33 @@
+{% if domains %}
+<ul class="space-y-2">
+    {% for domain in domains %}
+    <li>
+        <div
+            class="tree-toggle flex items-center gap-2 p-2 rounded-lg"
+            hx-get="{{ url_for('pm:domain-projects', domain=domain.name) }}"
+            hx-target="#domain-{{ loop.index }}-children"
+            hx-swap="innerHTML"
+            hx-trigger="click once"
+            onclick="toggleTreeNode(this)"
+        >
+            <span class="badge badge-primary">Domain</span>
+            <span class="font-semibold">{{ domain.name }}</span>
+            {% if domain.description %}
+            <span class="text-base-content/50 text-sm">- {{ domain.description }}</span>
+            {% endif %}
+        </div>
+        <div id="domain-{{ loop.index }}-children" class="tree-children tree-node hidden">
+            <div class="flex items-center gap-2 p-2 text-base-content/50">
+                <span class="loading loading-spinner loading-sm"></span>
+                <span>Click to load...</span>
+            </div>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="alert alert-info">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    <span>No domains configured.</span>
+</div>
+{% endif %}

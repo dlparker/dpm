@@ -1,0 +1,40 @@
+{% extends "sb_base.html" %}
+
+{% block title %}TAP Focus{% endblock %}
+{% block sb_main_content %}
+<main id="tap-focus-content" class="flex-1 p-6"
+      hx-get="{{ url_for('pm:tap-task') }}"
+      hx-trigger="every 1s"
+      hx-select="#tap-focus-content"
+      hx-swap="outerHTML">
+  {% if task %}
+  <ul class="space-y-1">
+    <li class="flex items-center gap-2 p-2 rounded-lg hover:bg-base-300">
+      ID: {{ task.task_id }}
+    </li>
+    <li class="flex items-center gap-2 p-2 rounded-lg hover:bg-base-300">
+      Name: {{ task.name }}
+    </li>
+    <li class="flex items-center gap-2 p-2 rounded-lg hover:bg-base-300">
+      {# Status indicator #}
+      Status:
+      {% if task.status == 'Done' %}
+      <span class="badge badge-success badge-sm">Done</span>
+      {% elif task.status == 'InProgress' %}
+      <span class="badge badge-warning badge-sm">In Progress</span>
+      {% elif task.status == 'Blocked' %}
+      <span class="badge badge-error badge-sm">Blocked</span>
+      {% else %}
+      <span class="badge badge-ghost badge-sm">{{ task.status }}</span>
+      {% endif %}
+    </li>
+    <li>
+      {% if task.description %}
+      <span class="text-base-content/50 text-sm truncate max-w-xs">- {{ task.description }}</span>
+      {% endif %}
+    </li>
+  </ul>
+  {% endif %}
+</main>
+{% endblock %}
+

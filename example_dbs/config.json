@@ -1,0 +1,12 @@
+{
+    "databases": {
+        "move_out": {
+            "path": "./move_proj.db",
+            "description": "Move out of house domain"
+        },
+        "commander": {
+            "path": "./cmdr_proj.db",
+            "description": "Commander tool for assistant"
+        }
+    }
+}

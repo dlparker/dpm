@@ -1,0 +1,73 @@
+{# Shows phases and tasks for a project — using named routes via url_for #}
+
+{% if phases or tasks %}
+<ul class="space-y-1">
+    {# Phases section #}
+    {% if phases %}
+    <li>
+        <div
+            class="tree-toggle flex items-center gap-2 p-2 rounded-lg"
+            onclick="toggleTreeNode(this)"
+        >
+            <svg class="tree-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+            <span class="badge badge-accent">Phases</span>
+            <span class="text-base-content/50 text-sm">({{ phases|length }})</span>
+        </div>
+        <div class="tree-children tree-node hidden">
+            <ul class="space-y-1">
+                {% for phase in phases %}
+                <li>
+                    <div
+                        class="tree-toggle flex items-center gap-2 p-2 rounded-lg"
+                        hx-get="{{ url_for('pm:phase-tasks-partial', domain=domain, phase_id=phase.phase_id) }}"
+                        hx-target="#domain-{{domain}}-phase-{{ phase.phase_id }}-tasks"
+                        hx-swap="innerHTML"
+                        hx-trigger="click once"
+                        onclick="toggleTreeNode(this)"
+                    >
+                        <svg class="tree-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                        <span class="badge badge-warning badge-outline">Phase</span>
+                        <span>{{ phase.name }}</span>
+                        {% if phase.description %}
+                        <span class="text-base-content/50 text-sm truncate max-w-xs">- {{ phase.description }}</span>
+                        {% endif %}
+                    </div>
+                    <div id="domain-{{domain}}-phase-{{ phase.phase_id }}-tasks" class="tree-children tree-node hidden">
+                        <div class="flex items-center gap-2 p-2 text-base-content/50">
+                            <span class="loading loading-spinner loading-sm"></span>
+                            <span>Click to load...</span>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </li>
+    {% endif %}
+
+    {# Direct tasks (not in a phase) #}
+    {% if tasks %}
+    <li>
+        <div
+            class="tree-toggle flex items-center gap-2 p-2 rounded-lg"
+            onclick="toggleTreeNode(this)"
+        >
+            <svg class="tree-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+            <span class="badge badge-info">Tasks</span>
+            <span class="text-base-content/50 text-sm">({{ tasks|length }} direct)</span>
+        </div>
+        <div class="tree-children tree-node hidden">
+            {% include "pm_tasks_partial.html" %}
+        </div>
+    </li>
+    {% endif %}
+</ul>
+{% else %}
+<p class="text-base-content/50 italic p-2">No phases or tasks in this project.</p>
+{% endif %}

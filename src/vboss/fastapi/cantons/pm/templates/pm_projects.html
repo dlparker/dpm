@@ -1,0 +1,38 @@
+{% extends "sb_base.html" %}
+
+{% block title %}Project Management Projects for {{domain}} {% endblock %}
+
+{% block sb_main_content %}
+{% if projects %}
+<main class="flex-1 p-6">
+  <ul class="space-y-1">
+    {% for project in projects %}
+    <li>
+        <div
+            class="tree-toggle flex items-center gap-2 p-2 rounded-lg"
+            hx-get="{{ url_for('pm:project-children', domain=domain, project_id=project.project_id) }}"
+            hx-target="#domain-{{domain}}-project-{{ project.project_id }}-children"
+            hx-swap="innerHTML"
+            hx-trigger="click once"
+            onclick="toggleTreeNode(this)"
+        >
+            <span class="badge badge-secondary">Project</span>
+            <span class="font-medium">{{ project.name }}</span>
+            {% if project.description %}
+            <span class="text-base-content/50 text-sm truncate max-w-xs">- {{ project.description }}</span>
+            {% endif %}
+        </div>
+        <div id="domain-{{domain}}-project-{{ project.project_id }}-children" class="tree-children tree-node hidden">
+            <div class="flex items-center gap-2 p-2 text-base-content/50">
+                <span class="loading loading-spinner loading-sm"></span>
+                <span>Click to load...</span>
+            </div>
+        </div>
+    </li>
+    {% endfor %}
+  </ul>
+{% else %}
+<p class="text-base-content/50 italic p-2">No projects in this domain.</p>
+{% endif %}
+</main>
+{% endblock %}
