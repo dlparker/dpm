@@ -17,6 +17,12 @@ from dpm.fastapi.dpm.api_router import PMDBAPIService
 from dpm.fastapi.dpm.ui_router import PMUIRouter
 from dpm.fastapi.shared.ui_router import UIRouter
 
+app_root = Path(__file__).parent.resolve()
+template_paths = {
+    'shared': str(app_root / "shared" / "templates"),
+    'dpm': str(app_root / "dpm"/ "templates")
+}
+
 class DPMManager:
 
     def __init__(self, config_path: str):
@@ -35,18 +41,17 @@ class DPMManager:
 
     def get_domains(self):
         return self.domain_catalog.pmdb_domains
-    
+
 class DPMServer:
 
     def __init__(self, config_path: os.PathLike):
-        # Set up Jinja2 templates
         self.dpm_manager = DPMManager(config_path)
-        
-        app_root = Path(__file__).parent.resolve()
+
+        # Set up Jinja2 templates
         env = Environment(
             loader=ChoiceLoader([
-                FileSystemLoader(str(app_root / "shared" / "templates")),  # Shared base.html, etc.
-                FileSystemLoader(str(app_root / "dpm"/ "templates")),  # Shared base.html, etc.
+                FileSystemLoader(template_paths['shared']),  # Shared base.html, etc.
+                FileSystemLoader(template_paths['dpm']),  # Shared base.html, etc.
             ]),
             autoescape=select_autoescape("html", "jinja2"),
             # Optional: add other env settings like trim_blocks=True, lstrip_blocks=True

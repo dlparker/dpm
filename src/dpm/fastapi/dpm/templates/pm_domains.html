@@ -20,6 +20,14 @@
             {% if domain.description %}
             <span class="text-base-content/50 text-sm">- {{ domain.description }}</span>
             {% endif %}
+            <a href="{{ url_for('pm:project-create', domain=domain.name) }}"
+               class="btn btn-ghost btn-xs ml-auto"
+               onclick="event.stopPropagation()"
+               title="Create new project">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+            </a>
         </div>
         <div id="domain-{{ loop.index }}-children" class="tree-children tree-node hidden">
             <div class="flex items-center gap-2 p-2 text-base-content/50">

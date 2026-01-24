@@ -1,34 +1,47 @@
 {% extends "pm_sb_base.html" %}
 
-{% block title %}Project Management Task View{% endblock %}
+{% block title %}Task - {{ task.name }}{% endblock %}
 {% block sb_main_content %}
-<main class="flex-1 p-6">
-  <ul class="space-y-1">
-    <li class="flex items-center gap-2 p-2 rounded-lg hover:bg-base-300">
-       ID: {{ task.task_id }}
-    </li>
-    <li class="flex items-center gap-2 p-2 rounded-lg hover:bg-base-300">
-        Name: {{ task.name }}
-    </li>
-    <li class="flex items-center gap-2 p-2 rounded-lg hover:bg-base-300">
-      {# Status indicator #}
-      Status:
+<main class="flex-1 p-6 max-w-2xl">
+    <div class="flex items-center gap-2 mb-6">
+        <h1 class="text-2xl font-bold">{{ task.name }}</h1>
         {% if task.status == 'Done' %}
-        <span class="badge badge-success badge-sm">Done</span>
+        <span class="badge badge-success">Done</span>
         {% elif task.status == 'InProgress' %}
-        <span class="badge badge-warning badge-sm">In Progress</span>
+        <span class="badge badge-warning">In Progress</span>
         {% elif task.status == 'Blocked' %}
-        <span class="badge badge-error badge-sm">Blocked</span>
+        <span class="badge badge-error">Blocked</span>
         {% else %}
-        <span class="badge badge-ghost badge-sm">{{ task.status }}</span>
+        <span class="badge badge-ghost">{{ task.status }}</span>
         {% endif %}
-    </li>
-    <li>
-        {% if task.description %}
-        <span class="text-base-content/50 text-sm truncate max-w-xs">- {{ task.description }}</span>
-        {% endif %}
-    </li>
-  </ul>
+        <div class="ml-auto flex items-center gap-1">
+            <a href="{{ url_for('pm:task-edit', domain=domain, task_id=task.task_id) }}"
+               class="btn btn-ghost btn-xs"
+               title="Edit task">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+            </a>
+            <a href="{{ url_for('pm:task-delete', domain=domain, task_id=task.task_id) }}"
+               class="btn btn-ghost btn-xs text-error"
+               title="Delete task">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    {% if task.description %}
+    <div class="mb-4">
+        <h2 class="text-sm font-medium text-base-content/60 mb-1">Description</h2>
+        <p class="text-base-content">{{ task.description }}</p>
+    </div>
+    {% endif %}
+
+    <div class="text-sm text-base-content/50">
+        Task ID: {{ task.task_id }}
+    </div>
 </main>
 {% endblock %}
 
