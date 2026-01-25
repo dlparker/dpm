@@ -1,0 +1,132 @@
+<dialog id="task-edit-modal" class="modal modal-open">
+    <div class="modal-box max-w-2xl">
+        <h3 class="font-bold text-lg mb-4">Edit Task</h3>
+
+        <form hx-post="{{ url_for('pm:task-edit-modal-submit', domain=domain, task_id=task.task_id) }}"
+              hx-target="#edit-modal-container"
+              hx-swap="innerHTML"
+              class="space-y-4">
+
+            <!-- Name field -->
+            <div class="form-control w-full">
+                <label class="label" for="modal-name">
+                    <span class="label-text font-medium">Task Name <span class="text-error">*</span></span>
+                </label>
+                <input type="text"
+                       id="modal-name"
+                       name="name"
+                       value="{{ task.name }}"
+                       class="input input-bordered w-full"
+                       required />
+            </div>
+
+            <!-- Status field -->
+            <div class="form-control w-full">
+                <label class="label" for="modal-status">
+                    <span class="label-text font-medium">Status</span>
+                </label>
+                <select id="modal-status"
+                        name="status"
+                        class="select select-bordered w-full">
+                    <option value="ToDo" {% if task.status == 'ToDo' %}selected{% endif %}>To Do</option>
+                    <option value="InProgress" {% if task.status == 'InProgress' %}selected{% endif %}>In Progress</option>
+                    <option value="Blocked" {% if task.status == 'Blocked' %}selected{% endif %}>Blocked</option>
+                    <option value="Done" {% if task.status == 'Done' %}selected{% endif %}>Done</option>
+                </select>
+            </div>
+
+            <!-- Description field -->
+            <div class="form-control w-full">
+                <label class="label" for="modal-description">
+                    <span class="label-text font-medium">Description</span>
+                </label>
+                <textarea id="modal-description"
+                          name="description"
+                          class="textarea textarea-bordered w-full h-24"
+                          rows="3">{{ task.description or '' }}</textarea>
+            </div>
+
+            <!-- Project field -->
+            <div class="form-control w-full">
+                <label class="label" for="modal-project_id">
+                    <span class="label-text font-medium">Project <span class="text-error">*</span></span>
+                </label>
+                <select id="modal-project_id"
+                        name="project_id"
+                        class="select select-bordered w-full"
+                        required
+                        hx-on:change="htmx.ajax('GET', '{{ url_for('pm:project-phases-options', domain=domain, project_id=0) }}'.replace('/0/', '/' + this.value + '/'), {target: '#modal-phase_id', swap: 'innerHTML'})">
+                    {% for project in projects %}
+                    <option value="{{ project.project_id }}"
+                            {% if task.project_id == project.project_id %}selected{% endif %}>
+                        {{ project.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Phase field -->
+            <div class="form-control w-full">
+                <label class="label" for="modal-phase_id">
+                    <span class="label-text font-medium">Phase</span>
+                </label>
+                <select id="modal-phase_id"
+                        name="phase_id"
+                        class="select select-bordered w-full">
+                    <option value="">None (directly under project)</option>
+                    {% for phase in phases %}
+                    <option value="{{ phase.phase_id }}"
+                            {% if task.phase_id == phase.phase_id %}selected{% endif %}>
+                        {{ phase.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Blocked By field -->
+            <div class="form-control w-full">
+                <label class="label">
+                    <span class="label-text font-medium">Blocked By</span>
+                </label>
+                <p class="text-sm text-base-content/60 mb-2">Select tasks that must be completed before this task can start.</p>
+                {% if available_tasks %}
+                <div class="max-h-48 overflow-y-auto border border-base-300 rounded-lg p-2 space-y-1">
+                    {% for t in available_tasks %}
+                    <label class="flex items-center gap-2 p-2 rounded hover:bg-base-200 cursor-pointer">
+                        <input type="checkbox"
+                               name="blocker_ids"
+                               value="{{ t.task_id }}"
+                               class="checkbox checkbox-sm"
+                               {% if t.task_id in current_blocker_ids %}checked{% endif %} />
+                        <span class="flex-1">{{ t.name }}</span>
+                        {% if t.status == 'Done' %}
+                        <span class="badge badge-success badge-sm">Done</span>
+                        {% elif t.status == 'InProgress' %}
+                        <span class="badge badge-warning badge-sm">In Progress</span>
+                        {% elif t.status == 'Blocked' %}
+                        <span class="badge badge-error badge-sm">Blocked</span>
+                        {% else %}
+                        <span class="badge badge-ghost badge-sm">{{ t.status }}</span>
+                        {% endif %}
+                    </label>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-base-content/50 italic text-sm">No other tasks available to block this task.</p>
+                {% endif %}
+            </div>
+
+            <!-- Modal actions -->
+            <div class="modal-action">
+                <button type="submit" class="btn btn-primary">
+                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Save Changes
+                </button>
+                <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+    <div class="modal-backdrop" onclick="closeModal()"></div>
+</dialog>

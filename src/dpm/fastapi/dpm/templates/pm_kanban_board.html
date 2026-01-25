@@ -1,0 +1,309 @@
+{% extends "pm_sb_base.html" %}
+
+{% block title %}Kanban Board{% endblock %}
+
+{% block extra_head %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<style>
+    .sortable-ghost {
+        opacity: 0.4;
+        background: hsl(var(--p) / 0.2);
+    }
+    .sortable-chosen {
+        background: hsl(var(--b3));
+    }
+    .kanban-card {
+        cursor: grab;
+    }
+    .kanban-card:active {
+        cursor: grabbing;
+    }
+</style>
+{% endblock %}
+
+{% block sb_main_content %}
+<main class="flex-1 p-6">
+    <div class="mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h1 class="text-2xl font-bold">Kanban Board</h1>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+            <!-- Project filter -->
+            <div class="dropdown">
+                <label tabindex="0" class="btn btn-sm btn-outline gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                    </svg>
+                    SELECT BY PROJECT
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </label>
+                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-64 max-h-60 overflow-y-auto">
+                    <li>
+                        <a href="#" onclick="event.preventDefault(); document.activeElement.blur(); setProjectFilter(null, 'All Projects');">
+                            All Projects
+                        </a>
+                    </li>
+                    {% for project in projects %}
+                    <li>
+                        <a href="#"
+                           data-project-id="{{ project.project_id }}"
+                           data-project-name="{{ project.name|e }}"
+                           onclick="event.preventDefault(); document.activeElement.blur(); setProjectFilter(parseInt(this.dataset.projectId), this.dataset.projectName);">
+                            {{ project.name }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Phase filter (populated dynamically) -->
+            <div class="dropdown" id="phase-dropdown">
+                <label tabindex="0" class="btn btn-sm btn-outline gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                    SELECT BY PHASE
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </label>
+                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-64 max-h-60 overflow-y-auto" id="phase-options">
+                    <li><span class="text-base-content/50 px-4 py-2 text-sm">Select a project first</span></li>
+                </ul>
+            </div>
+
+            <!-- Selected filter indicators -->
+            <div id="selected-filters" class="flex gap-2"></div>
+        </div>
+    </div>
+
+    <!-- Kanban columns container -->
+    <div id="board-columns"
+         hx-get="{{ url_for('pm:kanban-columns', domain=domain) }}{% if selected_project %}?project_id={{ selected_project.project_id }}{% if selected_phase %}&phase_id={{ selected_phase.phase_id }}{% endif %}{% endif %}"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+        <div class="flex justify-center p-8">
+            <span class="loading loading-spinner loading-lg"></span>
+        </div>
+    </div>
+
+    <!-- Edit modal container -->
+    <div id="edit-modal-container"></div>
+
+    <!-- Toast message container -->
+    <div id="board-message" class="toast toast-end toast-bottom z-50"></div>
+</main>
+
+<script>
+    const baseColumnsUrl = '{{ url_for("pm:kanban-columns", domain=domain) }}';
+    const basePhaseOptionsUrl = '{{ url_for("pm:kanban-phase-options", domain=domain) }}';
+    const moveTaskUrl = '{{ url_for("pm:kanban-move-task", domain=domain) }}';
+
+    let currentProjectId = {{ selected_project.project_id|tojson if selected_project else 'null' }};
+    let currentProjectName = {{ selected_project.name|tojson if selected_project else 'null' }};
+    let currentPhaseId = {{ selected_phase.phase_id|tojson if selected_phase else 'null' }};
+    let currentPhaseName = {{ selected_phase.name|tojson if selected_phase else 'null' }};
+
+    function getColumnsUrl() {
+        let url = baseColumnsUrl;
+        const params = [];
+        if (currentProjectId) params.push('project_id=' + currentProjectId);
+        if (currentPhaseId) params.push('phase_id=' + currentPhaseId);
+        if (params.length > 0) url += '?' + params.join('&');
+        return url;
+    }
+
+    function updateBoardColumnsUrl() {
+        const boardColumns = document.getElementById('board-columns');
+        boardColumns.setAttribute('hx-get', getColumnsUrl());
+        htmx.process(boardColumns);
+    }
+
+    function refreshBoard() {
+        updateBoardColumnsUrl();
+        htmx.ajax('GET', getColumnsUrl(), {
+            target: '#board-columns',
+            swap: 'innerHTML'
+        });
+    }
+
+    function setProjectFilter(projectId, projectName) {
+        currentProjectId = projectId;
+        currentProjectName = projectName;
+        currentPhaseId = null;
+        currentPhaseName = null;
+        updateFilterBadges();
+        updatePhaseDropdown();
+        refreshBoard();
+    }
+
+    function setPhaseFilter(phaseId, phaseName) {
+        currentPhaseId = phaseId;
+        currentPhaseName = phaseName;
+        updateFilterBadges();
+        refreshBoard();
+    }
+
+    function clearProjectFilter() {
+        currentProjectId = null;
+        currentProjectName = null;
+        currentPhaseId = null;
+        currentPhaseName = null;
+        updateFilterBadges();
+        updatePhaseDropdown();
+        refreshBoard();
+    }
+
+    function clearPhaseFilter() {
+        currentPhaseId = null;
+        currentPhaseName = null;
+        updateFilterBadges();
+        refreshBoard();
+    }
+
+    function updateFilterBadges() {
+        const container = document.getElementById('selected-filters');
+        let html = '';
+
+        if (currentProjectId && currentProjectName) {
+            html += `<div class="badge badge-primary gap-1">
+                ${escapeHtml(currentProjectName)}
+                <a onclick="clearProjectFilter();" class="cursor-pointer">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </a>
+            </div>`;
+        }
+
+        if (currentPhaseId && currentPhaseName) {
+            html += `<div class="badge badge-secondary gap-1">
+                ${escapeHtml(currentPhaseName)}
+                <a onclick="clearPhaseFilter();" class="cursor-pointer">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </a>
+            </div>`;
+        }
+
+        container.innerHTML = html;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function updatePhaseDropdown() {
+        const phaseOptions = document.getElementById('phase-options');
+        if (!currentProjectId) {
+            phaseOptions.innerHTML = '<li><span class="text-base-content/50 px-4 py-2 text-sm">Select a project first</span></li>';
+            return;
+        }
+
+        htmx.ajax('GET', basePhaseOptionsUrl + '?project_id=' + currentProjectId, {
+            target: '#phase-options',
+            swap: 'innerHTML'
+        });
+    }
+
+    function closeModal() {
+        const container = document.getElementById('edit-modal-container');
+        container.innerHTML = '';
+    }
+
+    function showMessage(success, message) {
+        const container = document.getElementById('board-message');
+        const alertClass = success ? 'alert-success' : 'alert-error';
+        container.innerHTML = `
+            <div class="alert ${alertClass}">
+                <span>${message}</span>
+            </div>
+        `;
+        setTimeout(() => {
+            container.innerHTML = '';
+        }, 3000);
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateBoardColumnsUrl();
+        updateFilterBadges();
+        if (currentProjectId) {
+            updatePhaseDropdown();
+        }
+    });
+
+    // Initialize Sortable on columns after HTMX loads them
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        if (evt.detail.target.id === 'board-columns') {
+            initSortable();
+        }
+    });
+
+    // Intercept refresh-board event to use current filters
+    document.body.addEventListener('refresh-board', function(evt) {
+        evt.preventDefault();
+        refreshBoard();
+    });
+
+    function initSortable() {
+        document.querySelectorAll('.kanban-column').forEach(column => {
+            new Sortable(column, {
+                group: 'kanban',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                onEnd: function(evt) {
+                    const taskId = evt.item.dataset.taskId;
+                    const newStatus = evt.to.dataset.status;
+                    const oldStatus = evt.from.dataset.status;
+
+                    // If dropped in same column, do nothing
+                    if (newStatus === oldStatus) {
+                        return;
+                    }
+
+                    // Get blockers from data attribute
+                    let blockers = [];
+                    try {
+                        const blockersJson = evt.item.dataset.blockers;
+                        if (blockersJson) {
+                            blockers = JSON.parse(blockersJson);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing blockers JSON:', e);
+                    }
+
+                    // Client-side blocker check
+                    if ((newStatus === 'InProgress' || newStatus === 'Done') && blockers.length > 0) {
+                        // Revert move
+                        evt.from.insertBefore(evt.item, evt.from.children[evt.oldIndex] || null);
+                        showMessage(false, 'Cannot move: blocked by ' + blockers.map(b => b.name).join(', '));
+                        return;
+                    }
+
+                    // POST to server
+                    htmx.ajax('POST', moveTaskUrl, {
+                        values: { task_id: taskId, new_status: newStatus },
+                        swap: 'innerHTML',
+                        target: '#board-message'
+                    });
+                }
+            });
+        });
+    }
+
+    // Listen for close-modal event
+    document.body.addEventListener('close-modal', function() {
+        closeModal();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,40 @@
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- ToDo Column -->
+    <div class="bg-base-200 rounded-lg p-4 min-h-[400px]">
+        <h2 class="font-bold text-lg mb-4 flex items-center gap-2">
+            <span class="badge badge-ghost">{{ todo_tasks|length }}</span>
+            ToDo
+        </h2>
+        <div class="space-y-3 kanban-column min-h-[300px]" data-status="ToDo">
+            {% for task in todo_tasks %}
+            {% include "pm_kanban_card.html" %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Doing (InProgress) Column -->
+    <div class="bg-base-200 rounded-lg p-4 min-h-[400px]">
+        <h2 class="font-bold text-lg mb-4 flex items-center gap-2">
+            <span class="badge badge-warning">{{ doing_tasks|length }}</span>
+            Doing
+        </h2>
+        <div class="space-y-3 kanban-column min-h-[300px]" data-status="InProgress">
+            {% for task in doing_tasks %}
+            {% include "pm_kanban_card.html" %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Done Column -->
+    <div class="bg-base-200 rounded-lg p-4 min-h-[400px]">
+        <h2 class="font-bold text-lg mb-4 flex items-center gap-2">
+            <span class="badge badge-success">{{ done_tasks|length }}</span>
+            Done
+        </h2>
+        <div class="space-y-3 kanban-column min-h-[300px]" data-status="Done">
+            {% for task in done_tasks %}
+            {% include "pm_kanban_card.html" %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
