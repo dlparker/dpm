@@ -6,9 +6,6 @@
 <div class="flex items-center gap-2 p-2">
   <span class="badge badge-warning badge-outline">Project</span>
   <span class="font-semibold">{{ project.name }}</span>
-  {% if project.description %}
-  <span class="text-base-content/50 text-sm truncate max-w-xs">- {{ project.description }}</span>
-  {% endif %}
   <div class="ml-auto flex items-center gap-1">
       <a href="{{ url_for('pm:kanban-board', domain=domain) }}?project_id={{ project.project_id }}"
          class="btn btn-ghost btn-xs"
@@ -49,6 +46,13 @@
       </a>
   </div>
 </div>
+
+{% if project.description %}
+<div class="px-2 pb-2">
+    <p class="text-base-content/70">{{ project.description }}</p>
+</div>
+{% endif %}
+
 <div
   hx-get="{{ url_for('pm:project-children', domain=domain, project_id=project.project_id) }}"
   hx-target="#domain-{{domain}}-project-{{ project.project_id }}-children"

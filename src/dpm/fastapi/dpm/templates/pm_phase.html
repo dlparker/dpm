@@ -14,9 +14,6 @@
 <div class="flex items-center gap-2 p-2">
   <span class="badge badge-warning badge-outline">Phase</span>
   <span class="font-semibold">{{ phase.name }}</span>
-  {% if phase.description %}
-  <span class="text-base-content/50 text-sm truncate max-w-xs">- {{ phase.description }}</span>
-  {% endif %}
   <div class="ml-auto flex items-center gap-1">
       <a href="{{ url_for('pm:kanban-board', domain=domain) }}?project_id={{ phase.project_id }}&phase_id={{ phase.phase_id }}"
          class="btn btn-ghost btn-xs"
@@ -50,6 +47,13 @@
       </a>
   </div>
 </div>
+
+{% if phase.description %}
+<div class="px-2 pb-2">
+    <p class="text-base-content/70">{{ phase.description }}</p>
+</div>
+{% endif %}
+
 <div
   hx-get="{{ url_for('pm:phase-tasks', domain=domain, phase_id=phase.phase_id) }}"
   hx-target="#domain-{{domain}}-phase-{{ phase.phase_id }}-tasks"
