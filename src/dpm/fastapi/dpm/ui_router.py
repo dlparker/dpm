@@ -1103,13 +1103,10 @@ class PMDBUIRouter:
             if not phase:
                 raise HTTPException(status_code=404, detail="Phase not found")
 
-            project = db.get_project_by_id(phase.project_id)
-
             context =  {
                 "request": request,
                 "domain": domain,
                 "phase": phase,
-                "project": project,
             }
             is_htmx = request.headers.get("HX-Request") == "true"
             if is_htmx:
@@ -1137,8 +1134,6 @@ class PMDBUIRouter:
 
             blockers = task.get_blockers(only_not_done=False)
             blocks = task.blocks_tasks()
-            project = db.get_project_by_id(task.project_id)
-            phase = db.get_phase_by_id(task.phase_id) if task.phase_id else None
 
             context = {
                 "request": request,
@@ -1146,8 +1141,6 @@ class PMDBUIRouter:
                 "task": task,
                 "blockers": blockers,
                 "blocks": blocks,
-                "project": project,
-                "phase": phase,
             }
             is_htmx = request.headers.get("HX-Request") == "true"
             if is_htmx:

@@ -3,23 +3,18 @@
 {% block title %}Task - {{ task.name }}{% endblock %}
 {% block sb_main_content %}
 <main class="flex-1 p-6 max-w-2xl">
-    <!-- Breadcrumb navigation -->
-    <div class="text-sm breadcrumbs mb-4">
-      <ul>
-        <li>
-          <a href="{{ url_for('pm:project', domain=domain, project_id=project.project_id) }}" class="link link-hover">
-            {{ project.name }}
-          </a>
-        </li>
-        {% if phase %}
-        <li>
-          <a href="{{ url_for('pm:phase', domain=domain, phase_id=phase.phase_id) }}" class="link link-hover">
-            {{ phase.name }}
-          </a>
-        </li>
-        {% endif %}
-        <li>{{ task.name }}</li>
-      </ul>
+    <!-- Parent navigation -->
+    <div class="flex items-center gap-4 mb-4">
+      <a href="{{ url_for('pm:project', domain=domain, project_id=task.project.project_id) }}" class="inline-flex items-center gap-2 link link-hover">
+        <span class="badge badge-secondary badge-sm">Project</span>
+        {{ task.project.name }}
+      </a>
+      {% if task.phase %}
+      <a href="{{ url_for('pm:phase', domain=domain, phase_id=task.phase.phase_id) }}" class="inline-flex items-center gap-2 link link-hover">
+        <span class="badge badge-warning badge-outline badge-sm">Phase</span>
+        {{ task.phase.name }}
+      </a>
+      {% endif %}
     </div>
 
     <div class="flex items-center gap-2 mb-6">

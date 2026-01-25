@@ -14,7 +14,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from dpm.store.models import ModelDB, DomainCatalog
 from dpm.fastapi.dpm.api_router import PMDBAPIService
-from dpm.fastapi.dpm.ui_router import PMUIRouter
+from dpm.fastapi.dpm.ui_router import PMDBUIRouter
 from dpm.fastapi.shared.ui_router import UIRouter
 
 app_root = Path(__file__).parent.resolve()
@@ -59,7 +59,7 @@ class DPMServer:
         #self.templates = Jinja2Templates(env=env)
         self.templates = Jinja2Blocks(env=env)
         self.pmdb_service = PMDBAPIService(self, self.dpm_manager)
-        self.pmui_router = PMUIRouter(self, self.dpm_manager)
+        self.pmui_router = PMDBUIRouter(self, self.dpm_manager)
         self.main_router = UIRouter(self, self.dpm_manager)
         self.title = "DPM"
         self.description = "Task management "
