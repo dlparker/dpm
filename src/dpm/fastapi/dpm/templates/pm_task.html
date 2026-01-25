@@ -2,7 +2,7 @@
 
 {% block title %}Task - {{ task.name }}{% endblock %}
 {% block sb_main_content %}
-<main class="flex-1 p-6 max-w-2xl">
+<main class="flex-1 p-6">
     <!-- Parent navigation -->
     <div class="flex items-center gap-4 mb-4">
       <a href="{{ url_for('pm:project', domain=domain, project_id=task.project.project_id) }}" class="inline-flex items-center gap-2 link link-hover">
