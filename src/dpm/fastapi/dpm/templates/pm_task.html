@@ -33,15 +33,66 @@
     </div>
 
     {% if task.description %}
-    <div class="mb-4">
+    <div class="mb-6">
         <h2 class="text-sm font-medium text-base-content/60 mb-1">Description</h2>
         <p class="text-base-content">{{ task.description }}</p>
     </div>
     {% endif %}
+
+    <!-- Blocked by section -->
+    <div class="mb-6">
+        <h2 class="text-sm font-medium text-base-content/60 mb-2">Blocked By</h2>
+        {% if blockers %}
+        <ul class="space-y-1">
+            {% for blocker in blockers %}
+            <li class="flex items-center gap-2 p-2 rounded-lg bg-base-200">
+                {% if blocker.status == 'Done' %}
+                <span class="badge badge-success badge-sm">Done</span>
+                {% elif blocker.status == 'InProgress' %}
+                <span class="badge badge-warning badge-sm">In Progress</span>
+                {% elif blocker.status == 'Blocked' %}
+                <span class="badge badge-error badge-sm">Blocked</span>
+                {% else %}
+                <span class="badge badge-ghost badge-sm">{{ blocker.status }}</span>
+                {% endif %}
+                <a href="{{ url_for('pm:task-detail', domain=domain, task_id=blocker.task_id) }}"
+                   class="link link-hover">{{ blocker.name }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-base-content/50 italic text-sm">No blocking tasks</p>
+        {% endif %}
+    </div>
+
+    <!-- Blocks section -->
+    <div class="mb-6">
+        <h2 class="text-sm font-medium text-base-content/60 mb-2">Blocks</h2>
+        {% if blocks %}
+        <ul class="space-y-1">
+            {% for blocked in blocks %}
+            <li class="flex items-center gap-2 p-2 rounded-lg bg-base-200">
+                {% if blocked.status == 'Done' %}
+                <span class="badge badge-success badge-sm">Done</span>
+                {% elif blocked.status == 'InProgress' %}
+                <span class="badge badge-warning badge-sm">In Progress</span>
+                {% elif blocked.status == 'Blocked' %}
+                <span class="badge badge-error badge-sm">Blocked</span>
+                {% else %}
+                <span class="badge badge-ghost badge-sm">{{ blocked.status }}</span>
+                {% endif %}
+                <a href="{{ url_for('pm:task-detail', domain=domain, task_id=blocked.task_id) }}"
+                   class="link link-hover">{{ blocked.name }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-base-content/50 italic text-sm">Does not block any tasks</p>
+        {% endif %}
+    </div>
 
     <div class="text-sm text-base-content/50">
         Task ID: {{ task.task_id }}
     </div>
 </main>
 {% endblock %}
-

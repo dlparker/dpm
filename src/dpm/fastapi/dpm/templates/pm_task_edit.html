@@ -78,6 +78,7 @@
                 name="project_id"
                 class="select select-bordered w-full"
                 required
+                hx-on:change="htmx.ajax('GET', '{{ url_for('pm:project-phases-options', domain=domain, project_id=0) }}'.replace('/0/', '/' + this.value + '/'), {target: '#phase_id', swap: 'innerHTML'})"
             >
                 {% for project in projects %}
                 <option value="{{ project.project_id }}"
@@ -85,6 +86,9 @@
                 >{{ project.name }}</option>
                 {% endfor %}
             </select>
+            <label class="label">
+                <span class="label-text-alt text-base-content/50">Changing the project will reset the phase selection</span>
+            </label>
         </div>
 
         <!-- Phase field -->
@@ -105,8 +109,43 @@
                 {% endfor %}
             </select>
             <label class="label">
-                <span class="label-text-alt text-base-content/50">Optionally assign this task to a phase</span>
+                <span class="label-text-alt text-base-content/50">Optionally assign this task to a phase within the project</span>
             </label>
+        </div>
+
+        <!-- Blocked By field -->
+        <div class="form-control w-full">
+            <label class="label">
+                <span class="label-text font-medium">Blocked By</span>
+            </label>
+            <p class="text-sm text-base-content/60 mb-2">Select tasks that must be completed before this task can start.</p>
+            {% if available_tasks %}
+            <div class="max-h-48 overflow-y-auto border border-base-300 rounded-lg p-2 space-y-1">
+                {% for t in available_tasks %}
+                <label class="flex items-center gap-2 p-2 rounded hover:bg-base-200 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        name="blocker_ids"
+                        value="{{ t.task_id }}"
+                        class="checkbox checkbox-sm"
+                        {% if t.task_id in current_blocker_ids %}checked{% endif %}
+                    />
+                    <span class="flex-1">{{ t.name }}</span>
+                    {% if t.status == 'Done' %}
+                    <span class="badge badge-success badge-sm">Done</span>
+                    {% elif t.status == 'InProgress' %}
+                    <span class="badge badge-warning badge-sm">In Progress</span>
+                    {% elif t.status == 'Blocked' %}
+                    <span class="badge badge-error badge-sm">Blocked</span>
+                    {% else %}
+                    <span class="badge badge-ghost badge-sm">{{ t.status }}</span>
+                    {% endif %}
+                </label>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-base-content/50 italic text-sm">No other tasks available to block this task.</p>
+            {% endif %}
         </div>
 
         <!-- Form actions -->

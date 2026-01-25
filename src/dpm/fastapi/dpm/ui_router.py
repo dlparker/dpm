@@ -699,11 +699,14 @@ class PMUIRouter:
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found")
 
+            available_tasks = db.get_tasks()
+
             context = {
                 "request": request,
                 "domain": domain,
                 "project": project,
                 "phase": None,
+                "available_tasks": available_tasks,
             }
             is_htmx = request.headers.get("HX-Request") == "true"
             if is_htmx:
@@ -735,6 +738,10 @@ class PMUIRouter:
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found")
 
+            # Parse blocker IDs from form data
+            form_data = await request.form()
+            blocker_ids = [int(bid) for bid in form_data.getlist("blocker_ids") if bid]
+
             try:
                 task = db.add_task(
                     name=name,
@@ -743,6 +750,13 @@ class PMUIRouter:
                     project_id=project_id,
                     phase_id=None
                 )
+
+                # Add blockers
+                for bid in blocker_ids:
+                    blocker_task = db.get_task_by_id(bid)
+                    if blocker_task:
+                        task.add_blocker(blocker_task)
+
                 context = {
                     "request": request,
                     "success": True,
@@ -769,12 +783,14 @@ class PMUIRouter:
             if not phase:
                 raise HTTPException(status_code=404, detail="Phase not found")
             project = db.get_project_by_id(phase.project_id)
+            available_tasks = db.get_tasks()
 
             context = {
                 "request": request,
                 "domain": domain,
                 "project": project,
                 "phase": phase,
+                "available_tasks": available_tasks,
             }
             is_htmx = request.headers.get("HX-Request") == "true"
             if is_htmx:
@@ -806,6 +822,10 @@ class PMUIRouter:
             if not phase:
                 raise HTTPException(status_code=404, detail="Phase not found")
 
+            # Parse blocker IDs from form data
+            form_data = await request.form()
+            blocker_ids = [int(bid) for bid in form_data.getlist("blocker_ids") if bid]
+
             try:
                 task = db.add_task(
                     name=name,
@@ -814,6 +834,13 @@ class PMUIRouter:
                     project_id=phase.project_id,
                     phase_id=phase_id
                 )
+
+                # Add blockers
+                for bid in blocker_ids:
+                    blocker_task = db.get_task_by_id(bid)
+                    if blocker_task:
+                        task.add_blocker(blocker_task)
+
                 context = {
                     "request": request,
                     "success": True,
@@ -830,6 +857,23 @@ class PMUIRouter:
 
             return self.templates.TemplateResponse("pm_form_result.html", context)
 
+        @router.get("/{domain}/project/{project_id}/phases-options", response_class=HTMLResponse, name="pm:project-phases-options")
+        async def pm_project_phases_options(request: Request, domain: str, project_id: int, selected_phase_id: Optional[int] = None):
+            """HTMX endpoint to get phase options for a project dropdown."""
+            if domain == 'default':
+                domain = self.dpm_manager.get_default_domain()
+            db = self._get_db(domain)
+            project = db.get_project_by_id(project_id)
+            if not project:
+                return HTMLResponse('<option value="">None (directly under project)</option>')
+
+            phases = project.get_phases()
+            options = ['<option value="">None (directly under project)</option>']
+            for phase in phases:
+                selected = 'selected' if selected_phase_id and phase.phase_id == selected_phase_id else ''
+                options.append(f'<option value="{phase.phase_id}" {selected}>{phase.name}</option>')
+            return HTMLResponse('\n'.join(options))
+
         @router.get("/{domain}/task/{task_id}/edit", response_class=HTMLResponse, name="pm:task-edit")
         async def pm_task_edit(request: Request, domain: str, task_id: int):
             if domain == 'default':
@@ -841,7 +885,13 @@ class PMUIRouter:
                 raise HTTPException(status_code=404, detail="Task not found")
 
             projects = db.get_projects()
-            phases = db.get_phases()
+            current_project = db.get_project_by_id(task.project_id)
+            phases = current_project.get_phases() if current_project else []
+            all_tasks = db.get_tasks()
+            # Filter out the current task from available blockers
+            available_tasks = [t for t in all_tasks if t.task_id != task_id]
+            current_blockers = task.get_blockers(only_not_done=False)
+            current_blocker_ids = [b.task_id for b in current_blockers]
 
             context = {
                 "request": request,
@@ -849,6 +899,8 @@ class PMUIRouter:
                 "task": task,
                 "projects": projects,
                 "phases": phases,
+                "available_tasks": available_tasks,
+                "current_blocker_ids": current_blocker_ids,
             }
             is_htmx = request.headers.get("HX-Request") == "true"
             if is_htmx:
@@ -885,6 +937,17 @@ class PMUIRouter:
             project_id_int = int(project_id)
             phase_id_int = int(phase_id) if phase_id else None
 
+            # Validate phase belongs to the selected project
+            if phase_id_int:
+                phase = db.get_phase_by_id(phase_id_int)
+                if not phase or phase.project_id != project_id_int:
+                    # Phase doesn't belong to the selected project, clear it
+                    phase_id_int = None
+
+            # Parse blocker IDs from form data (multi-select checkboxes)
+            form_data = await request.form()
+            new_blocker_ids = set(int(bid) for bid in form_data.getlist("blocker_ids") if bid)
+
             try:
                 task.name = name
                 task.status = status
@@ -892,6 +955,22 @@ class PMUIRouter:
                 task.project_id = project_id_int
                 task.phase_id = phase_id_int
                 task.save()
+
+                # Update blockers - get current blockers and compute diff
+                current_blockers = task.get_blockers(only_not_done=False)
+                current_blocker_ids = set(b.task_id for b in current_blockers)
+
+                # Add new blockers
+                for bid in new_blocker_ids - current_blocker_ids:
+                    blocker_task = db.get_task_by_id(bid)
+                    if blocker_task:
+                        task.add_blocker(blocker_task)
+
+                # Remove old blockers
+                for bid in current_blocker_ids - new_blocker_ids:
+                    blocker_task = db.get_task_by_id(bid)
+                    if blocker_task:
+                        task.delete_blocker(blocker_task)
 
                 context = {
                     "request": request,
@@ -1045,16 +1124,21 @@ class PMUIRouter:
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
                 return RedirectResponse(url=request.url_for("pm:task-detail", domain=domain,
-                                                            task_id=task_id))            
+                                                            task_id=task_id))
             db = self._get_db(domain)
             task = db.get_task_by_id(task_id)
             if not task:
                 raise HTTPException(status_code=404, detail="Task not found")
 
+            blockers = task.get_blockers(only_not_done=False)
+            blocks = task.blocks_tasks()
+
             context = {
                 "request": request,
                 "domain": domain,
-                "task": task
+                "task": task,
+                "blockers": blockers,
+                "blocks": blocks
             }
             is_htmx = request.headers.get("HX-Request") == "true"
             if is_htmx:

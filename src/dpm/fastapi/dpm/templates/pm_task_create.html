@@ -76,6 +76,40 @@
             </label>
         </div>
 
+        <!-- Blocked By field -->
+        <div class="form-control w-full">
+            <label class="label">
+                <span class="label-text font-medium">Blocked By</span>
+            </label>
+            <p class="text-sm text-base-content/60 mb-2">Select tasks that must be completed before this task can start.</p>
+            {% if available_tasks %}
+            <div class="max-h-48 overflow-y-auto border border-base-300 rounded-lg p-2 space-y-1">
+                {% for t in available_tasks %}
+                <label class="flex items-center gap-2 p-2 rounded hover:bg-base-200 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        name="blocker_ids"
+                        value="{{ t.task_id }}"
+                        class="checkbox checkbox-sm"
+                    />
+                    <span class="flex-1">{{ t.name }}</span>
+                    {% if t.status == 'Done' %}
+                    <span class="badge badge-success badge-sm">Done</span>
+                    {% elif t.status == 'InProgress' %}
+                    <span class="badge badge-warning badge-sm">In Progress</span>
+                    {% elif t.status == 'Blocked' %}
+                    <span class="badge badge-error badge-sm">Blocked</span>
+                    {% else %}
+                    <span class="badge badge-ghost badge-sm">{{ t.status }}</span>
+                    {% endif %}
+                </label>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-base-content/50 italic text-sm">No tasks available to block this task.</p>
+            {% endif %}
+        </div>
+
         <!-- Form actions -->
         <div class="flex items-center gap-3 pt-4 border-t border-base-300">
             <button type="submit" class="btn btn-primary">
