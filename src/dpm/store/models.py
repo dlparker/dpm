@@ -1224,20 +1224,71 @@ class DomainCatalog:
 class DPMManager:
 
     def __init__(self, config_path: str):
-        self.domain_catalog = DomainCatalog.from_json_config(config_path)
+        self._config_path = Path(config_path)
+        self.domain_catalog = DomainCatalog.from_json_config(self._config_path)
         self.last_domain = None
         self.last_project = None
         self.last_phase = None
         self.last_task = None
+        self._load_state()
+
+    @property
+    def _state_path(self) -> Path:
+        return self._config_path.parent / ".dpm_state.json"
+
+    def _load_state(self):
+        """Load persisted state from disk."""
+        if not self._state_path.exists():
+            return
+        try:
+            with open(self._state_path) as f:
+                state = json.load(f)
+
+            # Restore domain
+            domain = state.get("last_domain")
+            if domain and domain in self.domain_catalog.pmdb_domains:
+                self.last_domain = domain
+                db = self.get_db_for_domain(domain)
+
+                # Restore project
+                project_id = state.get("last_project_id")
+                if project_id is not None:
+                    self.last_project = db.get_project_by_id(project_id)
+
+                # Restore phase
+                phase_id = state.get("last_phase_id")
+                if phase_id is not None:
+                    self.last_phase = db.get_phase_by_id(phase_id)
+
+                # Restore task
+                task_id = state.get("last_task_id")
+                if task_id is not None:
+                    self.last_task = db.get_task_by_id(task_id)
+        except Exception as e:
+            log.warning(f"Failed to load state: {e}")
+
+    def _save_state(self):
+        """Persist current state to disk."""
+        state = {
+            "last_domain": self.last_domain,
+            "last_project_id": self.last_project.project_id if self.last_project else None,
+            "last_phase_id": self.last_phase.phase_id if self.last_phase else None,
+            "last_task_id": self.last_task.task_id if self.last_task else None,
+        }
+        try:
+            with open(self._state_path, "w") as f:
+                json.dump(state, f, indent=2)
+        except Exception as e:
+            log.warning(f"Failed to save state: {e}")
 
     def get_db_for_domain(self, domain):
         return self.domain_catalog.pmdb_domains[domain].db
-        
+
     def get_default_domain(self):
         if not self.last_domain:
             self.last_domain = next(iter(self.domain_catalog.pmdb_domains))
         return self.last_domain
-        
+
     async def shutdown(self):
         for rec in self.domain_catalog.pmdb_domains.values():
             rec.db.close()
@@ -1249,10 +1300,11 @@ class DPMManager:
         if domain not in self.domain_catalog.pmdb_domains:
             raise Exception(f"No such domain {domain}")
         self.last_domain = domain
-        
+        self._save_state()
+
     def get_last_domain(self):
         return self.last_domain
-        
+
     def set_last_project(self, domain:str, project: Union[Project, "ProjectRecord"]):
         if domain not in self.domain_catalog.pmdb_domains:
             raise Exception(f"No such domain {domain}")
@@ -1262,6 +1314,7 @@ class DPMManager:
         if p_check is None:
             raise Exception(f"No such project {project.project_id} {project.name} in domain {domain}")
         self.last_project = project
+        self._save_state()
 
     def get_last_project(self):
         return self.last_project
@@ -1276,10 +1329,11 @@ class DPMManager:
             raise Exception(f"No such phase {phase.phase_id} {phase.name} in domain {domain}")
         self.last_phase = phase
         self.last_project = phase.project
+        self._save_state()
 
     def get_last_phase(self):
         return self.last_phase
-        
+
     def set_last_task(self, domain:str, task: Union[Task, "TaskRecord"]):
         if domain not in self.domain_catalog.pmdb_domains:
             raise Exception(f"No such domain {domain}")
@@ -1291,7 +1345,8 @@ class DPMManager:
         self.last_task = task
         self.last_project = task.project
         if task.phase:
-            self.last_phase = task.phase 
+            self.last_phase = task.phase
+        self._save_state()
 
     def get_last_task(self):
         return self.last_task
