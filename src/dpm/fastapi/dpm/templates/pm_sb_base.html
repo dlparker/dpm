@@ -70,6 +70,25 @@
     <!-- Page content -->
   {% block sb_main_content %}{% endblock %}
   </div>
+
+  <!-- Edit modal container -->
+  <div id="edit-modal-container"></div>
 </div>
+
+<script>
+    function closeModal() {
+        const container = document.getElementById('edit-modal-container');
+        container.innerHTML = '';
+    }
+
+    // Listen for close-modal event from HTMX (triggered on successful edit)
+    document.body.addEventListener('close-modal', function() {
+        closeModal();
+        // Refresh the page to show updated data (kanban board handles this differently)
+        if (!document.getElementById('board-columns')) {
+            location.reload();
+        }
+    });
+</script>
 {% endblock %}
 

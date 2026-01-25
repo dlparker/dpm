@@ -92,9 +92,6 @@
         </div>
     </div>
 
-    <!-- Edit modal container -->
-    <div id="edit-modal-container"></div>
-
     <!-- Toast message container -->
     <div id="board-message" class="toast toast-end toast-bottom z-50"></div>
 </main>
@@ -214,11 +211,6 @@
         });
     }
 
-    function closeModal() {
-        const container = document.getElementById('edit-modal-container');
-        container.innerHTML = '';
-    }
-
     function showMessage(success, message) {
         const container = document.getElementById('board-message');
         const alertClass = success ? 'alert-success' : 'alert-error';
@@ -301,9 +293,5 @@
         });
     }
 
-    // Listen for close-modal event
-    document.body.addEventListener('close-modal', function() {
-        closeModal();
-    });
 </script>
 {% endblock %}

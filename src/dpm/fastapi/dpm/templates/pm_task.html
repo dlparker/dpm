@@ -36,13 +36,15 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path>
                 </svg>
             </a>
-            <a href="{{ url_for('pm:task-edit', domain=domain, task_id=task.task_id) }}"
+            <button hx-get="{{ url_for('pm:task-edit-modal', domain=domain, task_id=task.task_id) }}"
+               hx-target="#edit-modal-container"
+               hx-swap="innerHTML"
                class="btn btn-ghost btn-xs"
                title="Edit task">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                 </svg>
-            </a>
+            </button>
             <a href="{{ url_for('pm:task-delete', domain=domain, task_id=task.task_id) }}"
                class="btn btn-ghost btn-xs text-error"
                title="Delete task">
