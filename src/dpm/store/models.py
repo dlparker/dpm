@@ -1,7 +1,7 @@
 from pathlib import Path
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 import json
 import logging
 
@@ -1253,7 +1253,7 @@ class DPMManager:
     def get_last_domain(self):
         return self.last_domain
         
-    def set_last_project(self, domain:str, project: Project):
+    def set_last_project(self, domain:str, project: Union[Project, "ProjectRecord"]):
         if domain not in self.domain_catalog.pmdb_domains:
             raise Exception(f"No such domain {domain}")
         self.last_domain = domain
@@ -1266,7 +1266,7 @@ class DPMManager:
     def get_last_project(self):
         return self.last_project
 
-    def set_last_phase(self, domain:str, phase: Phase):
+    def set_last_phase(self, domain:str, phase: Union[Phase, "PhaseRecord"]):
         if domain not in self.domain_catalog.pmdb_domains:
             raise Exception(f"No such domain {domain}")
         self.last_domain = domain
@@ -1280,7 +1280,7 @@ class DPMManager:
     def get_last_phase(self):
         return self.last_phase
         
-    def set_last_task(self, domain:str, task: Task):
+    def set_last_task(self, domain:str, task: Union[Task, "TaskRecord"]):
         if domain not in self.domain_catalog.pmdb_domains:
             raise Exception(f"No such domain {domain}")
         self.last_domain = domain

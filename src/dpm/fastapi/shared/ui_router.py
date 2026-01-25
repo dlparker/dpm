@@ -27,9 +27,19 @@ class UIRouter:
 
         @router.get("/", response_class=HTMLResponse, name="ui:home")
         async def home(request: Request):
+            last_domain = self.dpm_manager.get_last_domain()
+            last_project = self.dpm_manager.get_last_project()
+            last_phase = self.dpm_manager.get_last_phase()
+            last_task = self.dpm_manager.get_last_task()
             return self.templates.TemplateResponse(
                 "home.html",
-                {"request": request}
+                {
+                    "request": request,
+                    "last_domain": last_domain,
+                    "last_project": last_project,
+                    "last_phase": last_phase,
+                    "last_task": last_task,
+                }
             )
 
         @router.get("/status-partial", response_class=HTMLResponse, name="ui:status-partial")

@@ -1,0 +1,91 @@
+{% extends "pm_sb_base.html" %}
+
+{% block title %}Domain - {{ domain_name }}{% endblock %}
+
+{% block sb_main_content %}
+<main class="flex-1 p-6">
+    <div class="flex items-center gap-2 mb-4">
+        <span class="badge badge-primary">Domain</span>
+        <span class="text-xl font-semibold">{{ domain_name }}</span>
+        <div class="ml-auto flex items-center gap-1">
+            <a href="{{ url_for('pm:kanban-board', domain=domain_name) }}"
+               class="btn btn-ghost btn-xs"
+               title="View on Kanban board">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path>
+                </svg>
+            </a>
+            <a href="{{ url_for('pm:project-create', domain=domain_name) }}"
+               class="btn btn-ghost btn-xs"
+               title="Create new project">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    {% if domain_description %}
+    <div class="mb-6">
+        <p class="text-base-content/70">{{ domain_description }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Projects tree -->
+    <div class="tree-collapsible">
+        {% if projects %}
+        <ul class="space-y-1">
+            {% for project in projects %}
+            <li>
+                <div
+                    class="tree-toggle flex items-center gap-2 p-2 rounded-lg"
+                    hx-get="{{ url_for('pm:project-children', domain=domain_name, project_id=project.project_id) }}"
+                    hx-target="#domain-{{domain_name}}-project-{{ project.project_id }}-children"
+                    hx-swap="innerHTML"
+                    hx-trigger="click once"
+                    onclick="toggleTreeNode(this)"
+                >
+                    <svg class="tree-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                    <span class="badge badge-secondary">Project</span>
+                    <span class="font-medium">{{ project.name }}</span>
+                    {% if project.description %}
+                    <span class="text-base-content/50 text-sm truncate max-w-xs">- {{ project.description }}</span>
+                    {% endif %}
+                    <div class="ml-auto flex items-center gap-1">
+                        <span hx-get="{{ url_for('pm:project-edit-modal', domain=domain_name, project_id=project.project_id) }}"
+                           hx-target="#edit-modal-container"
+                           hx-swap="innerHTML"
+                           class="btn btn-ghost btn-xs"
+                           onclick="event.stopPropagation()"
+                           title="Edit project">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </span>
+                        <a href="{{ url_for('pm:project', domain=domain_name, project_id=project.project_id) }}"
+                           class="btn btn-ghost btn-xs"
+                           onclick="event.stopPropagation()"
+                           title="View project details">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                <div id="domain-{{domain_name}}-project-{{ project.project_id }}-children" class="tree-children tree-node hidden">
+                    <div class="flex items-center gap-2 p-2 text-base-content/50">
+                        <span class="loading loading-spinner loading-sm"></span>
+                        <span>Click to load...</span>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-base-content/50 italic">No projects in this domain.</p>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}

@@ -1404,6 +1404,24 @@ class PMDBUIRouter:
         # Kanban Board Routes
         # ====================================================================
 
+        @router.get("/board", response_class=HTMLResponse, name="pm:kanban-board-auto")
+        async def pm_kanban_board_auto(request: Request):
+            project = self.dpm_manager.get_last_project()
+            phase = self.dpm_manager.get_last_phase()
+            last_domain = self.dpm_manager.get_last_domain()
+
+            if project is None and phase is None:
+                domain = last_domain if last_domain else self.dpm_manager.get_default_domain()
+                return RedirectResponse(url=request.url_for("pm:kanban-board", domain=domain))
+
+            if phase is not None:
+                base_url = request.url_for("pm:kanban-board", domain=last_domain)
+                return RedirectResponse(url=f"{base_url}?project_id={phase.project_id}&phase_id={phase.phase_id}")
+
+            base_url = request.url_for("pm:kanban-board", domain=last_domain)
+            return RedirectResponse(url=f"{base_url}?project_id={project.project_id}")
+            
+
         @router.get("/{domain}/board", response_class=HTMLResponse, name="pm:kanban-board")
         async def pm_kanban_board(request: Request, domain: str,
                                    project_id: Optional[int] = None,
@@ -1411,8 +1429,8 @@ class PMDBUIRouter:
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
                 return RedirectResponse(url=request.url_for("pm:kanban-board", domain=domain))
-            db = self._get_db(domain)
 
+            db = self._get_db(domain)
             projects = db.get_projects()
             selected_project = db.get_project_by_id(project_id) if project_id else None
             selected_phase = db.get_phase_by_id(phase_id) if phase_id else None
@@ -1699,5 +1717,41 @@ class PMDBUIRouter:
                     "message": f"Failed to delete task: {str(e)}"
                 }
                 return self.templates.TemplateResponse("pm_kanban_message.html", context)
+
+        # This route must be last since /{domain} is a catch-all pattern
+        @router.get("/{domain}", response_class=HTMLResponse, name="pm:domain")
+        async def pm_domain(request: Request, domain: str):
+            if domain == 'default':
+                domain = self.dpm_manager.get_default_domain()
+                return RedirectResponse(url=request.url_for("pm:domain", domain=domain))
+            self.dpm_manager.set_last_domain(domain)
+
+            # Get domain info
+            all_domains = self.dpm_manager.get_domains()
+            domain_info = all_domains.get(domain)
+            if not domain_info:
+                raise HTTPException(status_code=404, detail=f"Domain '{domain}' not found")
+
+            db = self._get_db(domain)
+            projects = db.get_projects()
+
+            context = {
+                "request": request,
+                "domain_name": domain,
+                "domain_description": domain_info.description,
+                "projects": projects,
+            }
+            is_htmx = request.headers.get("HX-Request") == "true"
+            if is_htmx:
+                return self.templates.TemplateResponse(
+                    "pm_domain.html",
+                    context,
+                    block_name="sb_main_content"
+                )
+            else:
+                return self.templates.TemplateResponse(
+                    "pm_domain.html",
+                    context
+                )
 
         return router
