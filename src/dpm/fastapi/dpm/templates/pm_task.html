@@ -3,6 +3,25 @@
 {% block title %}Task - {{ task.name }}{% endblock %}
 {% block sb_main_content %}
 <main class="flex-1 p-6 max-w-2xl">
+    <!-- Breadcrumb navigation -->
+    <div class="text-sm breadcrumbs mb-4">
+      <ul>
+        <li>
+          <a href="{{ url_for('pm:project', domain=domain, project_id=project.project_id) }}" class="link link-hover">
+            {{ project.name }}
+          </a>
+        </li>
+        {% if phase %}
+        <li>
+          <a href="{{ url_for('pm:phase', domain=domain, phase_id=phase.phase_id) }}" class="link link-hover">
+            {{ phase.name }}
+          </a>
+        </li>
+        {% endif %}
+        <li>{{ task.name }}</li>
+      </ul>
+    </div>
+
     <div class="flex items-center gap-2 mb-6">
         <h1 class="text-2xl font-bold">{{ task.name }}</h1>
         {% if task.status == 'Done' %}
