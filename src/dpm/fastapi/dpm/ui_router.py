@@ -10,6 +10,8 @@ from fastapi import APIRouter, Request, HTTPException, Form
 from typing import Optional
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
+from dpm.store.models import DPMManager
+
 logger = logging.getLogger("UIRouter")
 
 
@@ -38,7 +40,7 @@ def time_ago(ts):
 class PMDBUIRouter:
     """Router for HTML UI pages using HTMX, Tailwind CSS, and daisyUI."""
 
-    def __init__(self, server, dpm_manager):
+    def __init__(self, server, dpm_manager:DPMManager):
         self.server = server
         self.dpm_manager = dpm_manager
         self.templates = server.templates
@@ -105,6 +107,7 @@ class PMDBUIRouter:
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
                 return RedirectResponse(url=request.url_for("pm:nav-domain-projects", domain=domain))
+            self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
             projects = db.get_projects()
             context = {
@@ -127,6 +130,7 @@ class PMDBUIRouter:
             project = db.get_project_by_id(project_id)
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found")
+            self.dpm_manager.set_last_project(domain, project)
 
             phases = project.get_phases()
             all_tasks = project.get_tasks()
@@ -154,6 +158,7 @@ class PMDBUIRouter:
             phase = db.get_phase_by_id(phase_id)
             if not phase:
                 raise HTTPException(status_code=404, detail="Phase not found")
+            self.dpm_manager.set_last_phase(domain, phase)
 
             tasks = phase.get_tasks()
             context = {
@@ -176,7 +181,8 @@ class PMDBUIRouter:
         async def pm_projects(request: Request, domain: str):
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:domain-projects", domain=domain))            
+                return RedirectResponse(url=request.url_for("pm:domain-projects", domain=domain))
+            self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
             projects = db.get_projects()
             is_htmx = request.headers.get("HX-Request") == "true"
@@ -203,11 +209,12 @@ class PMDBUIRouter:
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
                 return RedirectResponse(url=request.url_for("pm:project-chidren", domain=domain,
-                                                            project_id=project_id))            
+                                                            project_id=project_id))
             db = self._get_db(domain)
             project = db.get_project_by_id(project_id)
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found")
+            self.dpm_manager.set_last_project(domain, project)
 
             phases = project.get_phases()
             all_tasks = project.get_tasks()
@@ -239,11 +246,12 @@ class PMDBUIRouter:
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
                 return RedirectResponse(url=request.url_for("pm:phase-tasks", domain=domain,
-                                                            phase_id=phase_id))            
+                                                            phase_id=phase_id))
             db = self._get_db(domain)
             phase = db.get_phase_by_id(phase_id)
             if not phase:
                 raise HTTPException(status_code=404, detail="Phase not found")
+            self.dpm_manager.set_last_phase(domain, phase)
 
             tasks = phase.get_tasks()
             context =  {
@@ -274,6 +282,7 @@ class PMDBUIRouter:
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
                 return RedirectResponse(url=request.url_for("pm:project-create", domain=domain))
+            self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
             projects = db.get_projects()
 
@@ -306,6 +315,7 @@ class PMDBUIRouter:
         ):
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
+            self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
 
             # Convert parent_id to int or None
@@ -317,6 +327,7 @@ class PMDBUIRouter:
                     description=description if description else None,
                     parent_id=parent_id_int
                 )
+                self.dpm_manager.set_last_project(domain, project)
                 context = {
                     "request": request,
                     "success": True,
@@ -342,6 +353,7 @@ class PMDBUIRouter:
             project = db.get_project_by_id(project_id)
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found")
+            self.dpm_manager.set_last_project(domain, project)
 
             projects = db.get_projects()
 
@@ -380,6 +392,7 @@ class PMDBUIRouter:
             project = db.get_project_by_id(project_id)
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found")
+            self.dpm_manager.set_last_project(domain, project)
 
             # Convert parent_id to int or None
             parent_id_int = int(parent_id) if parent_id else None
@@ -423,6 +436,7 @@ class PMDBUIRouter:
             project = db.get_project_by_id(project_id)
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found")
+            self.dpm_manager.set_last_project(domain, project)
 
             projects = db.get_projects()
 
@@ -450,6 +464,7 @@ class PMDBUIRouter:
             project = db.get_project_by_id(project_id)
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found")
+            self.dpm_manager.set_last_project(domain, project)
 
             try:
                 project.name = name
@@ -479,6 +494,7 @@ class PMDBUIRouter:
             project = db.get_project_by_id(project_id)
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found")
+            self.dpm_manager.set_last_project(domain, project)
 
             phases = project.get_phases()
             tasks = project.get_tasks()
@@ -509,6 +525,7 @@ class PMDBUIRouter:
         async def pm_project_delete_submit(request: Request, domain: str, project_id: int):
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
+            self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
 
             project = db.get_project_by_id(project_id)
@@ -548,6 +565,7 @@ class PMDBUIRouter:
             project = db.get_project_by_id(project_id)
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found")
+            self.dpm_manager.set_last_project(domain, project)
 
             context = {
                 "request": request,
@@ -582,6 +600,7 @@ class PMDBUIRouter:
             project = db.get_project_by_id(project_id)
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found")
+            self.dpm_manager.set_last_project(domain, project)
 
             try:
                 phase = db.add_phase(
@@ -589,6 +608,7 @@ class PMDBUIRouter:
                     description=description if description else None,
                     project_id=project_id
                 )
+                self.dpm_manager.set_last_phase(domain, phase)
                 context = {
                     "request": request,
                     "success": True,
@@ -614,6 +634,7 @@ class PMDBUIRouter:
             phase = db.get_phase_by_id(phase_id)
             if not phase:
                 raise HTTPException(status_code=404, detail="Phase not found")
+            self.dpm_manager.set_last_phase(domain, phase)
 
             projects = db.get_projects()
 
@@ -652,6 +673,7 @@ class PMDBUIRouter:
             phase = db.get_phase_by_id(phase_id)
             if not phase:
                 raise HTTPException(status_code=404, detail="Phase not found")
+            self.dpm_manager.set_last_phase(domain, phase)
 
             project_id_int = int(project_id)
 
@@ -687,6 +709,7 @@ class PMDBUIRouter:
             phase = db.get_phase_by_id(phase_id)
             if not phase:
                 raise HTTPException(status_code=404, detail="Phase not found")
+            self.dpm_manager.set_last_phase(domain, phase)
 
             project = db.get_project_by_id(phase.project_id)
             tasks = phase.get_tasks()
@@ -715,6 +738,7 @@ class PMDBUIRouter:
         async def pm_phase_delete_submit(request: Request, domain: str, phase_id: int):
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
+            self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
 
             phase = db.get_phase_by_id(phase_id)
@@ -750,6 +774,7 @@ class PMDBUIRouter:
             phase = db.get_phase_by_id(phase_id)
             if not phase:
                 raise HTTPException(status_code=404, detail="Phase not found")
+            self.dpm_manager.set_last_phase(domain, phase)
 
             projects = db.get_projects()
 
@@ -777,6 +802,7 @@ class PMDBUIRouter:
             phase = db.get_phase_by_id(phase_id)
             if not phase:
                 raise HTTPException(status_code=404, detail="Phase not found")
+            self.dpm_manager.set_last_phase(domain, phase)
 
             project_id_int = int(project_id)
 
@@ -813,6 +839,7 @@ class PMDBUIRouter:
             project = db.get_project_by_id(project_id)
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found")
+            self.dpm_manager.set_last_project(domain, project)
 
             available_tasks = db.get_tasks()
 
@@ -852,6 +879,7 @@ class PMDBUIRouter:
             project = db.get_project_by_id(project_id)
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found")
+            self.dpm_manager.set_last_project(domain, project)
 
             # Parse blocker IDs from form data
             form_data = await request.form()
@@ -872,6 +900,7 @@ class PMDBUIRouter:
                     if blocker_task:
                         task.add_blocker(blocker_task)
 
+                self.dpm_manager.set_last_task(domain, task)
                 context = {
                     "request": request,
                     "success": True,
@@ -897,6 +926,7 @@ class PMDBUIRouter:
             phase = db.get_phase_by_id(phase_id)
             if not phase:
                 raise HTTPException(status_code=404, detail="Phase not found")
+            self.dpm_manager.set_last_phase(domain, phase)
             project = db.get_project_by_id(phase.project_id)
             available_tasks = db.get_tasks()
 
@@ -936,6 +966,7 @@ class PMDBUIRouter:
             phase = db.get_phase_by_id(phase_id)
             if not phase:
                 raise HTTPException(status_code=404, detail="Phase not found")
+            self.dpm_manager.set_last_phase(domain, phase)
 
             # Parse blocker IDs from form data
             form_data = await request.form()
@@ -956,6 +987,7 @@ class PMDBUIRouter:
                     if blocker_task:
                         task.add_blocker(blocker_task)
 
+                self.dpm_manager.set_last_task(domain, task)
                 context = {
                     "request": request,
                     "success": True,
@@ -977,6 +1009,7 @@ class PMDBUIRouter:
             """HTMX endpoint to get phase options for a project dropdown."""
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
+            self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
             project = db.get_project_by_id(project_id)
             if not project:
@@ -998,6 +1031,7 @@ class PMDBUIRouter:
             task = db.get_task_by_id(task_id)
             if not task:
                 raise HTTPException(status_code=404, detail="Task not found")
+            self.dpm_manager.set_last_task(domain, task)
 
             projects = db.get_projects()
             current_project = db.get_project_by_id(task.project_id)
@@ -1048,6 +1082,7 @@ class PMDBUIRouter:
             task = db.get_task_by_id(task_id)
             if not task:
                 raise HTTPException(status_code=404, detail="Task not found")
+            self.dpm_manager.set_last_task(domain, task)
 
             project_id_int = int(project_id)
             phase_id_int = int(phase_id) if phase_id else None
@@ -1112,6 +1147,7 @@ class PMDBUIRouter:
             task = db.get_task_by_id(task_id)
             if not task:
                 raise HTTPException(status_code=404, detail="Task not found")
+            self.dpm_manager.set_last_task(domain, task)
 
             blockers = task.get_blockers()
             blocks = task.blocks_tasks()
@@ -1140,6 +1176,7 @@ class PMDBUIRouter:
         async def pm_task_delete_submit(request: Request, domain: str, task_id: int):
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
+            self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
 
             task = db.get_task_by_id(task_id)
@@ -1181,11 +1218,12 @@ class PMDBUIRouter:
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
                 return RedirectResponse(url=request.url_for("pm:phase-tasks", domain=domain,
-                                                            project_id=project_id))            
+                                                            project_id=project_id))
             db = self._get_db(domain)
             project = db.get_project_by_id(project_id)
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found")
+            self.dpm_manager.set_last_project(domain, project)
 
             context =  {
                 "request": request,
@@ -1205,16 +1243,109 @@ class PMDBUIRouter:
                     context,
                 )
             
+        @router.get("/last/project/", response_class=HTMLResponse, name="pm:last_project")
+        async def pm_last_project(request: Request):
+            domain = self.dpm_manager.get_last_domain()
+            project = self.dpm_manager.get_last_project()
+            if domain is None or project is None:
+                return RedirectResponse(url=request.url_for("pm:domains"))
+            db = self._get_db(domain)
+            # get fresh copy
+            project = db.get_project_by_id(project.project_id)
+            if not project:
+                raise HTTPException(status_code=404, detail="Project not found")
+            context =  {
+                "request": request,
+                "domain": domain,
+                "project": project,
+            }
+            is_htmx = request.headers.get("HX-Request") == "true"
+            if is_htmx:
+                return self.templates.TemplateResponse(
+                    "pm_project.html",
+                    context,
+                    block_name="sb_main_content"
+                )
+            else:
+                return self.templates.TemplateResponse(
+                    "pm_project.html",
+                    context,
+                )
+            
+        @router.get("/last/phase/", response_class=HTMLResponse, name="pm:last_phase")
+        async def pm_last_phase(request: Request):
+            domain = self.dpm_manager.get_last_domain()
+            phase = self.dpm_manager.get_last_phase()
+            if domain is None or phase is None:
+                return RedirectResponse(url=request.url_for("pm:domains"))
+            db = self._get_db(domain)
+            # get fresh copy
+            phase = db.get_phase_by_id(phase.phase_id)
+            if not phase:
+                raise HTTPException(status_code=404, detail="Phase not found")
+            context =  {
+                "request": request,
+                "domain": domain,
+                "phase": phase,
+            }
+            is_htmx = request.headers.get("HX-Request") == "true"
+            if is_htmx:
+                return self.templates.TemplateResponse(
+                    "pm_phase.html",
+                    context,
+                    block_name="sb_main_content"
+                )
+            else:
+                return self.templates.TemplateResponse(
+                    "pm_phase.html",
+                    context,
+                )
+            
+        @router.get("/last/task/", response_class=HTMLResponse, name="pm:last_task")
+        async def pm_last_task(request: Request):
+            domain = self.dpm_manager.get_last_domain()
+            task = self.dpm_manager.get_last_task()
+            if domain is None or task is None:
+                return RedirectResponse(url=request.url_for("pm:domains"))
+            db = self._get_db(domain)
+            # get fresh copy
+            task = db.get_task_by_id(task.task_id)
+            if not task:
+                raise HTTPException(status_code=404, detail="Task not found")
+            blockers = task.get_blockers(only_not_done=False)
+            blocks = task.blocks_tasks()
+
+            context = {
+                "request": request,
+                "domain": domain,
+                "task": task,
+                "blockers": blockers,
+                "blocks": blocks,
+            }
+            is_htmx = request.headers.get("HX-Request") == "true"
+            if is_htmx:
+                return self.templates.TemplateResponse(
+                    "pm_task.html",
+                    context,
+                    block_name="sb_main_content"
+                )
+            else:
+                return self.templates.TemplateResponse(
+                    "pm_task.html",
+                    context
+                )
+            
         @router.get("/{domain}/phase/{phase_id}", response_class=HTMLResponse, name="pm:phase")
         async def pm_phase_tasks(request: Request, domain: str, phase_id: int):
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
                 return RedirectResponse(url=request.url_for("pm:phase-tasks", domain=domain,
-                                                            phase_id=phase_id))            
+                                                            phase_id=phase_id))
             db = self._get_db(domain)
             phase = db.get_phase_by_id(phase_id)
             if not phase:
                 raise HTTPException(status_code=404, detail="Phase not found")
+            self.dpm_manager.set_last_phase(domain, phase)
 
             context =  {
                 "request": request,
@@ -1244,6 +1375,7 @@ class PMDBUIRouter:
             task = db.get_task_by_id(task_id)
             if not task:
                 raise HTTPException(status_code=404, detail="Task not found")
+            self.dpm_manager.set_last_task(domain, task)
 
             blockers = task.get_blockers(only_not_done=False)
             blocks = task.blocks_tasks()
@@ -1285,6 +1417,13 @@ class PMDBUIRouter:
             selected_project = db.get_project_by_id(project_id) if project_id else None
             selected_phase = db.get_phase_by_id(phase_id) if phase_id else None
 
+            if selected_phase:
+                self.dpm_manager.set_last_phase(domain, selected_phase)
+            elif selected_project:
+                self.dpm_manager.set_last_project(domain, selected_project)
+            else:
+                self.dpm_manager.set_last_domain(domain)
+
             context = {
                 "request": request,
                 "domain": domain,
@@ -1311,6 +1450,7 @@ class PMDBUIRouter:
                                      phase_id: Optional[int] = None):
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
+            self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
 
             # Get tasks based on filters
@@ -1358,6 +1498,7 @@ class PMDBUIRouter:
             """HTMX endpoint to get phase options for the kanban filter dropdown."""
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
+            self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
             project = db.get_project_by_id(project_id)
             if not project:
@@ -1383,12 +1524,14 @@ class PMDBUIRouter:
             task = db.get_task_by_id(task_id)
 
             if not task:
+                self.dpm_manager.set_last_domain(domain)
                 context = {
                     "request": request,
                     "success": False,
                     "message": "Task not found"
                 }
                 return self.templates.TemplateResponse("pm_kanban_message.html", context)
+            self.dpm_manager.set_last_task(domain, task)
 
             # Server-side blocker validation
             if new_status in ('InProgress', 'Done'):
@@ -1431,6 +1574,7 @@ class PMDBUIRouter:
             task = db.get_task_by_id(task_id)
             if not task:
                 raise HTTPException(status_code=404, detail="Task not found")
+            self.dpm_manager.set_last_task(domain, task)
 
             projects = db.get_projects()
             current_project = db.get_project_by_id(task.project_id)
@@ -1469,6 +1613,7 @@ class PMDBUIRouter:
             task = db.get_task_by_id(task_id)
             if not task:
                 raise HTTPException(status_code=404, detail="Task not found")
+            self.dpm_manager.set_last_task(domain, task)
 
             project_id_int = int(project_id)
             phase_id_int = int(phase_id) if phase_id else None
@@ -1522,6 +1667,7 @@ class PMDBUIRouter:
         async def pm_task_delete_board(request: Request, domain: str, task_id: int):
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
+            self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
 
             task = db.get_task_by_id(task_id)

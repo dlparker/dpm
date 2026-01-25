@@ -1192,7 +1192,7 @@ class PMDBDomain:
 
 @dataclass
 class DomainCatalog:
-    pmdb_domains: Optional[dict[str,PMDBDomain]] = field(default_factory=dict)
+    pmdb_domains: dict[str,PMDBDomain] = field(default_factory=dict[str,PMDBDomain])
 
     @classmethod
     def from_json_config(cls, config_path):
@@ -1220,3 +1220,81 @@ class DomainCatalog:
             
             catalog.pmdb_domains[name] = domain
         return catalog
+
+class DPMManager:
+
+    def __init__(self, config_path: str):
+        self.domain_catalog = DomainCatalog.from_json_config(config_path)
+        self.last_domain = None
+        self.last_project = None
+        self.last_phase = None
+        self.last_task = None
+
+    def get_db_for_domain(self, domain):
+        return self.domain_catalog.pmdb_domains[domain].db
+        
+    def get_default_domain(self):
+        if not self.last_domain:
+            self.last_domain = next(iter(self.domain_catalog.pmdb_domains))
+        return self.last_domain
+        
+    async def shutdown(self):
+        for rec in self.domain_catalog.pmdb_domains.values():
+            rec.db.close()
+
+    def get_domains(self):
+        return self.domain_catalog.pmdb_domains
+
+    def set_last_domain(self, domain):
+        if domain not in self.domain_catalog.pmdb_domains:
+            raise Exception(f"No such domain {domain}")
+        self.last_domain = domain
+        
+    def get_last_domain(self):
+        return self.last_domain
+        
+    def set_last_project(self, domain:str, project: Project):
+        if domain not in self.domain_catalog.pmdb_domains:
+            raise Exception(f"No such domain {domain}")
+        self.last_domain = domain
+        db = self.get_db_for_domain(domain)
+        p_check = db.get_project_by_id(project_id=project.project_id)
+        if p_check is None:
+            raise Exception(f"No such project {project.project_id} {project.name} in domain {domain}")
+        self.last_project = project
+
+    def get_last_project(self):
+        return self.last_project
+
+    def set_last_phase(self, domain:str, phase: Phase):
+        if domain not in self.domain_catalog.pmdb_domains:
+            raise Exception(f"No such domain {domain}")
+        self.last_domain = domain
+        db = self.get_db_for_domain(domain)
+        p_check = db.get_phase_by_id(phase_id=phase.phase_id)
+        if p_check is None:
+            raise Exception(f"No such phase {phase.phase_id} {phase.name} in domain {domain}")
+        self.last_phase = phase
+        self.last_project = phase.project
+
+    def get_last_phase(self):
+        return self.last_phase
+        
+    def set_last_task(self, domain:str, task: Task):
+        if domain not in self.domain_catalog.pmdb_domains:
+            raise Exception(f"No such domain {domain}")
+        self.last_domain = domain
+        db = self.get_db_for_domain(domain)
+        p_check = db.get_task_by_id(task.task_id)
+        if p_check is None:
+            raise Exception(f"No such task {task.task_id} {task.name} in domain {domain}")
+        self.last_task = task
+        self.last_project = task.project
+        if task.phase:
+            self.last_phase = task.phase 
+
+    def get_last_task(self):
+        return self.last_task
+        
+
+    

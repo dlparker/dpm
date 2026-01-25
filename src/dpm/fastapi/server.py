@@ -12,7 +12,7 @@ from jinja2_fragments.fastapi import Jinja2Blocks
 from jinja2 import Environment, ChoiceLoader, FileSystemLoader  # For multiple directories
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from dpm.store.models import ModelDB, DomainCatalog
+from dpm.store.models import DPMManager, ModelDB, DomainCatalog, Phase, Project, Task
 from dpm.fastapi.dpm.api_router import PMDBAPIService
 from dpm.fastapi.dpm.ui_router import PMDBUIRouter
 from dpm.fastapi.shared.ui_router import UIRouter
@@ -22,25 +22,6 @@ template_paths = {
     'shared': str(app_root / "shared" / "templates"),
     'dpm': str(app_root / "dpm"/ "templates")
 }
-
-class DPMManager:
-
-    def __init__(self, config_path: str):
-        self.domain_catalog = DomainCatalog.from_json_config(config_path)
-
-    def get_db_for_domain(self, domain):
-        return self.domain_catalog.pmdb_domains[domain].db
-        
-    def get_default_domain(self):
-        domain = next(iter(self.domain_catalog.pmdb_domains))
-        return domain
-        
-    async def shutdown(self):
-        for rec in self.domain_catalog.pmdb_domains.values():
-            rec.db.close()
-
-    def get_domains(self):
-        return self.domain_catalog.pmdb_domains
 
 class DPMServer:
 
