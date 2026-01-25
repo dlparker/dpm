@@ -415,6 +415,61 @@ class PMDBUIRouter:
 
             return self.templates.TemplateResponse("pm_form_result.html", context)
 
+        @router.get("/{domain}/project/{project_id}/edit-modal", response_class=HTMLResponse, name="pm:project-edit-modal")
+        async def pm_project_edit_modal(request: Request, domain: str, project_id: int):
+            if domain == 'default':
+                domain = self.dpm_manager.get_default_domain()
+            db = self._get_db(domain)
+            project = db.get_project_by_id(project_id)
+            if not project:
+                raise HTTPException(status_code=404, detail="Project not found")
+
+            projects = db.get_projects()
+
+            context = {
+                "request": request,
+                "domain": domain,
+                "project": project,
+                "projects": projects,
+            }
+            return self.templates.TemplateResponse("pm_project_edit_modal.html", context)
+
+        @router.post("/{domain}/project/{project_id}/edit-modal", response_class=HTMLResponse, name="pm:project-edit-modal-submit")
+        async def pm_project_edit_modal_submit(
+            request: Request,
+            domain: str,
+            project_id: int,
+            name: str = Form(...),
+            description: str = Form(""),
+            parent_id: str = Form("")
+        ):
+            if domain == 'default':
+                domain = self.dpm_manager.get_default_domain()
+            db = self._get_db(domain)
+
+            project = db.get_project_by_id(project_id)
+            if not project:
+                raise HTTPException(status_code=404, detail="Project not found")
+
+            try:
+                project.name = name
+                project.description = description if description else None
+                project.parent_id = int(parent_id) if parent_id else None
+                project.save()
+
+                # Return empty response with trigger to close modal
+                response = HTMLResponse("")
+                response.headers["HX-Trigger"] = '{"close-modal": true}'
+                return response
+            except Exception as e:
+                logger.exception("Failed to update project")
+                context = {
+                    "request": request,
+                    "success": False,
+                    "message": f"Failed to update project: {str(e)}"
+                }
+                return self.templates.TemplateResponse("pm_form_result.html", context)
+
         @router.get("/{domain}/project/{project_id}/delete", response_class=HTMLResponse, name="pm:project-delete")
         async def pm_project_delete(request: Request, domain: str, project_id: int):
             if domain == 'default':
@@ -686,6 +741,64 @@ class PMDBUIRouter:
                 }
 
             return self.templates.TemplateResponse("pm_form_result.html", context)
+
+        @router.get("/{domain}/phase/{phase_id}/edit-modal", response_class=HTMLResponse, name="pm:phase-edit-modal")
+        async def pm_phase_edit_modal(request: Request, domain: str, phase_id: int):
+            if domain == 'default':
+                domain = self.dpm_manager.get_default_domain()
+            db = self._get_db(domain)
+            phase = db.get_phase_by_id(phase_id)
+            if not phase:
+                raise HTTPException(status_code=404, detail="Phase not found")
+
+            projects = db.get_projects()
+
+            context = {
+                "request": request,
+                "domain": domain,
+                "phase": phase,
+                "projects": projects,
+            }
+            return self.templates.TemplateResponse("pm_phase_edit_modal.html", context)
+
+        @router.post("/{domain}/phase/{phase_id}/edit-modal", response_class=HTMLResponse, name="pm:phase-edit-modal-submit")
+        async def pm_phase_edit_modal_submit(
+            request: Request,
+            domain: str,
+            phase_id: int,
+            name: str = Form(...),
+            description: str = Form(""),
+            project_id: str = Form(...)
+        ):
+            if domain == 'default':
+                domain = self.dpm_manager.get_default_domain()
+            db = self._get_db(domain)
+
+            phase = db.get_phase_by_id(phase_id)
+            if not phase:
+                raise HTTPException(status_code=404, detail="Phase not found")
+
+            project_id_int = int(project_id)
+
+            try:
+                phase.name = name
+                phase.description = description if description else None
+                if phase.project_id != project_id_int:
+                    phase.move_phase_and_tasks_to_project(project_id_int)
+                phase.save()
+
+                # Return empty response with trigger to close modal
+                response = HTMLResponse("")
+                response.headers["HX-Trigger"] = '{"close-modal": true}'
+                return response
+            except Exception as e:
+                logger.exception("Failed to update phase")
+                context = {
+                    "request": request,
+                    "success": False,
+                    "message": f"Failed to update phase: {str(e)}"
+                }
+                return self.templates.TemplateResponse("pm_kanban_message.html", context)
 
         # ====================================================================
         # CRUD Routes — Task management
