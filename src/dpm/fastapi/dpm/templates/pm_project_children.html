@@ -5,43 +5,33 @@
 
 {% block sb_main_content %}
 {% if phases or tasks %}
+<div class="tree-static">
 <ul class="space-y-1">
     {# Phases section #}
     {% if phases %}
     <li>
-        <div
-            class="tree-toggle flex items-center gap-2 p-2 rounded-lg"
-            onclick="toggleTreeNode(this)"
-        >
-            <svg class="tree-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-            </svg>
+        <div class="tree-header flex items-center gap-2 p-2 rounded-lg">
             <span class="badge badge-accent">Phases</span>
             <span class="text-base-content/50 text-sm">({{ phases|length }})</span>
             <a href="{{ url_for('pm:phase-create', domain=domain, project_id=project.project_id) }}"
                class="btn btn-ghost btn-xs ml-auto"
-               onclick="event.stopPropagation()"
                title="Create new phase">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
             </a>
         </div>
-        <div class="tree-children tree-node hidden">
+        <div class="tree-children tree-node">
             <ul class="space-y-1">
                 {% for phase in phases %}
                 <li>
                     <div
-                        class="tree-toggle flex items-center gap-2 p-2 rounded-lg"
+                        class="tree-header flex items-center gap-2 p-2 rounded-lg"
                         hx-get="{{ url_for('pm:phase-tasks', domain=domain, phase_id=phase.phase_id) }}"
                         hx-target="#domain-{{domain}}-phase-{{ phase.phase_id }}-tasks"
                         hx-swap="innerHTML"
-                        hx-trigger="click once"
-                        onclick="toggleTreeNode(this)"
+                        hx-trigger="load"
                     >
-                        <svg class="tree-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
                         <span class="badge badge-warning badge-outline">Phase</span>
                         <span>{{ phase.name }}</span>
                         {% if phase.description %}
@@ -50,7 +40,6 @@
                         <div class="ml-auto flex items-center gap-1">
                             <a href="{{ url_for('pm:task-create-in-phase', domain=domain, phase_id=phase.phase_id) }}"
                                class="btn btn-ghost btn-xs"
-                               onclick="event.stopPropagation()"
                                title="Create new task">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -58,7 +47,6 @@
                             </a>
                             <a href="{{ url_for('pm:phase-edit', domain=domain, phase_id=phase.phase_id) }}"
                                class="btn btn-ghost btn-xs"
-                               onclick="event.stopPropagation()"
                                title="Edit phase">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -66,7 +54,6 @@
                             </a>
                             <a href="{{ url_for('pm:phase', domain=domain, phase_id=phase.phase_id) }}"
                                class="btn btn-ghost btn-xs"
-                               onclick="event.stopPropagation()"
                                title="View phase details">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
@@ -74,10 +61,10 @@
                             </a>
                         </div>
                     </div>
-                    <div id="domain-{{domain}}-phase-{{ phase.phase_id }}-tasks" class="tree-children tree-node hidden">
+                    <div id="domain-{{domain}}-phase-{{ phase.phase_id }}-tasks" class="tree-children tree-node">
                         <div class="flex items-center gap-2 p-2 text-base-content/50">
                             <span class="loading loading-spinner loading-sm"></span>
-                            <span>Click to load...</span>
+                            <span>Loading...</span>
                         </div>
                     </div>
                 </li>
@@ -86,7 +73,66 @@
         </div>
     </li>
     {% endif %}
+
+    {# Direct Tasks section (tasks not in any phase) #}
+    {% if tasks %}
+    <li>
+        <div class="tree-header flex items-center gap-2 p-2 rounded-lg">
+            <span class="badge badge-info">Direct Tasks</span>
+            <span class="text-base-content/50 text-sm">({{ tasks|length }})</span>
+            <a href="{{ url_for('pm:task-create-in-project', domain=domain, project_id=project.project_id) }}"
+               class="btn btn-ghost btn-xs ml-auto"
+               title="Create new task">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+            </a>
+        </div>
+        <div class="tree-children tree-node">
+            <ul class="space-y-1">
+                {% for task in tasks %}
+                <li class="flex items-center gap-2 p-2 rounded-lg hover:bg-base-300">
+                    {# Status indicator #}
+                    {% if task.status == 'Done' %}
+                    <span class="badge badge-success badge-sm">Done</span>
+                    {% elif task.status == 'InProgress' %}
+                    <span class="badge badge-warning badge-sm">In Progress</span>
+                    {% elif task.status == 'Blocked' %}
+                    <span class="badge badge-error badge-sm">Blocked</span>
+                    {% else %}
+                    <span class="badge badge-ghost badge-sm">{{ task.status }}</span>
+                    {% endif %}
+
+                    <span>{{ task.name }}</span>
+
+                    {% if task.description %}
+                    <span class="text-base-content/50 text-sm truncate max-w-xs">- {{ task.description }}</span>
+                    {% endif %}
+
+                    <div class="ml-auto flex items-center gap-1">
+                        <a href="{{ url_for('pm:task-edit', domain=domain, task_id=task.task_id) }}"
+                           class="btn btn-ghost btn-xs"
+                           title="Edit task">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </a>
+                        <a href="{{ url_for('pm:task-detail', domain=domain, task_id=task.task_id) }}"
+                           class="btn btn-ghost btn-xs"
+                           title="View task details">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                        </a>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </li>
+    {% endif %}
 </ul>
+</div>
 {% else %}
 <p class="text-base-content/50 italic p-2">No phases or tasks in this project.</p>
 {% endif %}

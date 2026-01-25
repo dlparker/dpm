@@ -1,0 +1,97 @@
+{#
+  Tree Styles Template
+
+  Include this in the extra_head block to get tree styling.
+
+  Two variants available:
+  - .tree-collapsible: Nodes start collapsed, click to expand/collapse
+  - .tree-static: All nodes always visible, no collapse functionality
+
+  Usage:
+    {% include "_tree_styles.html" %}
+
+    <!-- Collapsible tree -->
+    <div class="tree-collapsible">
+      <div class="tree-toggle" onclick="toggleTreeNode(this)">
+        <svg class="tree-icon">...</svg>
+        <span>Parent</span>
+      </div>
+      <div class="tree-children tree-node hidden">
+        <div>Child item</div>
+      </div>
+    </div>
+
+    <!-- Static (always expanded) tree -->
+    <div class="tree-static">
+      <div class="tree-header">
+        <span>Parent</span>
+      </div>
+      <div class="tree-children tree-node">
+        <div>Child item</div>
+      </div>
+    </div>
+#}
+
+<style>
+    /* Common tree node styling */
+    .tree-node {
+        border-left: 2px solid hsl(var(--bc) / 0.2);
+        margin-left: 0.5rem;
+        padding-left: 0.75rem;
+    }
+
+    /* === Collapsible Tree Styles === */
+    .tree-collapsible .tree-toggle {
+        cursor: pointer;
+        user-select: none;
+    }
+    .tree-collapsible .tree-toggle:hover {
+        background-color: hsl(var(--bc) / 0.1);
+    }
+    .tree-collapsible .tree-icon {
+        transition: transform 0.2s ease;
+    }
+    .tree-collapsible .tree-icon.expanded {
+        transform: rotate(90deg);
+    }
+
+    /* === Static Tree Styles === */
+    .tree-static .tree-header {
+        user-select: none;
+    }
+    .tree-static .tree-header:hover {
+        background-color: hsl(var(--bc) / 0.1);
+    }
+    /* Hide collapse icons in static trees */
+    .tree-static .tree-icon {
+        display: none;
+    }
+    /* Children are always visible in static trees */
+    .tree-static .tree-children {
+        display: block !important;
+    }
+    .tree-static .tree-children.hidden {
+        display: block !important;
+    }
+</style>
+
+<script>
+    // Toggle tree node expansion (only works within .tree-collapsible)
+    function toggleTreeNode(element) {
+        // Check if we're in a collapsible tree
+        if (!element.closest('.tree-collapsible')) {
+            return;
+        }
+
+        const icon = element.querySelector('.tree-icon');
+        const children = element.nextElementSibling;
+
+        if (icon) {
+            icon.classList.toggle('expanded');
+        }
+
+        if (children && children.classList.contains('tree-children')) {
+            children.classList.toggle('hidden');
+        }
+    }
+</script>

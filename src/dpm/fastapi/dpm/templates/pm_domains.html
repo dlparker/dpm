@@ -4,6 +4,7 @@
 
 {% block sb_main_content %}
 {% if domains %}
+<div class="tree-collapsible">
 <ul class="space-y-2">
     {% for domain in domains %}
     <li>
@@ -15,6 +16,9 @@
             hx-trigger="click once"
             onclick="toggleTreeNode(this)"
         >
+            <svg class="tree-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
             <span class="badge badge-primary">Domain</span>
             <span class="font-semibold">{{ domain.name }}</span>
             {% if domain.description %}
@@ -38,6 +42,7 @@
     </li>
     {% endfor %}
 </ul>
+</div>
 {% else %}
 <div class="alert alert-info">
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>

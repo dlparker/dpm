@@ -2,26 +2,7 @@
 
 
 {% block extra_head %}
-<style>
-    .tree-node {
-        border-left: 2px solid hsl(var(--bc) / 0.2);
-        margin-left: 0.5rem;
-        padding-left: 0.75rem;
-    }
-    .tree-toggle {
-        cursor: pointer;
-        user-select: none;
-    }
-    .tree-toggle:hover {
-        background-color: hsl(var(--bc) / 0.1);
-    }
-    .tree-icon {
-        transition: transform 0.2s ease;
-    }
-    .tree-icon.expanded {
-        transform: rotate(90deg);
-    }
-</style>
+{% include "_tree_styles.html" %}
 {% endblock %}
 
 {% block content %}
@@ -45,7 +26,7 @@
     </div>
 
     <!-- Tree container -->
-    <div class="p-4">
+    <div class="p-4 tree-collapsible">
       <div
         id="tree-root"
         hx-get="{{ url_for('pm:nav_tree') }}"
@@ -92,20 +73,3 @@
 </div>
 {% endblock %}
 
-{% block extra_scripts %}
-<script>
-    // Toggle tree node expansion
-    function toggleTreeNode(element) {
-        const icon = element.querySelector('.tree-icon');
-        const children = element.nextElementSibling;
-
-        if (icon) {
-            icon.classList.toggle('expanded');
-        }
-
-        if (children && children.classList.contains('tree-children')) {
-            children.classList.toggle('hidden');
-        }
-    }
-</script>
-{% endblock %}
