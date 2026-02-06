@@ -79,7 +79,7 @@ class PMDBUIRouter:
                 )
 
         @router.get("/nav_tree", response_class=HTMLResponse, name="pm:nav_tree")
-        async def pm_domains(request: Request):
+        async def pm_nav_tree(request: Request):
             domains = [
                 {"name": name, "description": item.description}
                 for name, item in self.dpm_manager.get_domains().items()
@@ -1721,10 +1721,15 @@ class PMDBUIRouter:
         # This route must be last since /{domain} is a catch-all pattern
         @router.get("/{domain}", response_class=HTMLResponse, name="pm:domain")
         async def pm_domain(request: Request, domain: str):
+            if domain in ('favicon.ico', 'robots.txt'):
+                raise HTTPException(status_code=404)
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
                 return RedirectResponse(url=request.url_for("pm:domain", domain=domain))
-            self.dpm_manager.set_last_domain(domain)
+            try:
+                self.dpm_manager.set_last_domain(domain)
+            except Exception as e:
+                raise HTTPException(status_code=404, detail=f"Domain '{domain}' not found")
 
             # Get domain info
             all_domains = self.dpm_manager.get_domains()
