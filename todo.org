@@ -1,0 +1,72 @@
+
+
+We want to add a feature to the DPM project where you can save documents and document fragments, which we'll just call notes.
+Both the notes and the full documents should be storable in various formats, text, org, markdown, and PDF.
+Any notes that are created should be collected into a unfiled document, a document called unfiled.
+
+So, the note structure should have an optional title. And if the title
+is not present, it should default, property for the title should
+default to the first eight words of the note.  So, whenever notes are
+included in a document, which is always all notes must be included in
+a document, the document will have a line that is the title of the
+note.
+
+The UI will make it possible to link through to the individual
+notes or show them intact and in whole. This will only work if all the
+notes document are the same format. We don't want to get into the
+complexity of converting formats live.  So, all of the primary models
+are DPM project, task, all those should, I don't remember if there are
+any others, but they should each be able to be associated with any
+number of notes and documents. So, I guess this is probably just a
+foreign key relationship from the note model and the document model
+back to whatever they're attached to.
+
+
+
+We also want to be able to define special taxonomies. Creating them
+doesn't need to have any UI support, because there will be a small
+number that live long term. So, they can probably be loaded from a
+config file, synced with the database from a config file.
+
+These taxonomies will relate to the main models. So, for example, you
+can have a top-level category that always refers to a project or a
+domain even. And underneath it, the individual elements of the
+taxonomy can refer to sub-projects or tasks. So, essentially, it
+defines a specific area in which the normal taxonomy gets laid out.
+
+One example of this would be the categorization taxonomy for software
+projects.
+
+So, at the top, you have vision. The vision is probably a
+domain, and it would never have any tasks, even if it's a project.
+
+The next level below that would be a deliverable. A deliverable would
+be a project. It would never be a task.
+
+The next level below, a deliverable would be an epic. Now, an epic is
+a project, and it will probably have sub-projects, but it's never
+going to... I mean, it could have tasks that are directly assigned to
+the epic.
+
+The next level is a story. So, a story is... In the database, a story
+is a... It's a project. It isn't a task. So, an epic is made up of
+some number of stories and possible direct tasks, sub-projects, and
+database tasks.
+
+The next level is a software engineering-style task, which is not
+necessarily... It's not conceptually exactly the same thing as a DPM
+task, but it's a one-to-one relationship.
+
+So, tasks always exist as either a direct child of an epic or a direct
+child of a story in this particular categorization mechanism.
+
+So, from all of the above, these taxonomies are a tree structure, and
+at each level, they can refer to exactly one of the levels in the
+DPM. So, you have the possibility of a domain, a project, and a task.
+
+At creation time for taxonomy elements they create a link primary
+model, domain, project, or task. The taxonomy level definition
+(branch, leaf?)  defines the primary dpm model it overlays, and the
+taxonomy model instance has a reference to the instance of that dpm
+model that it creates. 
+
