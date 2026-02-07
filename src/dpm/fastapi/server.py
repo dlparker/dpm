@@ -13,6 +13,7 @@ from jinja2 import Environment, ChoiceLoader, FileSystemLoader  # For multiple d
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from dpm.store.models import DPMManager, ModelDB, DomainCatalog, Phase, Project, Task
+from dpm.fastapi.ops import ServerOps
 from dpm.fastapi.dpm.api_router import PMDBAPIService
 from dpm.fastapi.dpm.ui_router import PMDBUIRouter
 from dpm.fastapi.shared.ui_router import UIRouter
@@ -23,7 +24,7 @@ template_paths = {
     'dpm': str(app_root / "dpm"/ "templates")
 }
 
-class DPMServer:
+class DPMServer(ServerOps):
 
     def __init__(self, config_path: os.PathLike):
         self.dpm_manager = DPMManager(config_path)
