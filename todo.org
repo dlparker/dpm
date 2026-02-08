@@ -44,9 +44,9 @@ The next level below that would be a deliverable. A deliverable would
 be a project. It would never be a task.
 
 The next level below, a deliverable would be an epic. Now, an epic is
-a project, and it will probably have sub-projects, but it's never
-going to... I mean, it could have tasks that are directly assigned to
-the epic.
+a project, and it will probably have sub-projects. For simplicity it
+is not allowed to have tasks directly connected, they can only be connected
+to stories. 
 
 The next level is a story. So, a story is... In the database, a story
 is a... It's a project. It isn't a task. So, an epic is made up of
@@ -70,3 +70,90 @@ model, domain, project, or task. The taxonomy level definition
 taxonomy model instance has a reference to the instance of that dpm
 model that it creates. 
 
+#+begin_src python
+  from enum import StrEnum, auto
+  from typing import Optional
+
+  class DPMBase(StrEnum):
+      domain = auto()
+      project = auto()
+      task = auto()
+
+  class TaxoDef:
+      """ Used to define a taxonomy"""
+      covers_dpm: DPMbase
+      name: str
+      allow_multiple: Optional[bool] = True
+      parent: Optional['TaxoDef'] = None
+      children: Optional[list['Taxodef']] # default is empty list
+
+  class TaxoLevel:
+      """ Used to hold a taxonomy instance"""
+      def __init__(self, taxo_type: DPMBase, taxo_def: TaxoDef, name:str):
+          self.taxo_type = taxo_type
+          self.taxo_def = taxo_def
+          self.name = name
+          self.dpm_model = None
+      
+  class TaxoLevelForDomain(TaxoLevel):
+      def __init__(self, taxo_def: TaxoDef, name:str, description:Optional[str] = None):
+          super().__init__(DPMBase.domain, taxo_def, name:str)
+          self.dpm_model = ACTUAL_DB_CREATE_DOMAIN(name, description)
+          
+  class TaxoLevelForProject(TaxoLevel):
+      def __init__(self, taxo_def: TaxoDef, name:str, domain:TaxoLevelForDomain description:Optional[str] = None):
+      super().__init__(DPMBase.domain, taxo_def, name:str)
+          self.dpm_model = ACTUAL_DB_CREATE_PROJECT(name, description)
+      
+  class TaxoLevelForTask(TaxoLevel):
+      dmp_model: Project
+
+
+  taxonomy = TaxoDef(
+      covers_dpm = DPMBase.domain,
+      name = "Software Project"
+  )
+
+  vision = taxonomy.children.append(
+      TaxoDef(
+          covers_dpm = DPMBase.project,
+          name = "Vision",
+          parent = taxonomy
+          allow_multiple = False
+      ]
+  )
+  deliverable = vision.children.append(
+      TaxoDef(
+          covers_dpm = DPMBase.project,
+          name = "Deliverable",
+          parent = vision
+      ]
+  )
+  epic = vision.children.append(
+      TaxoDef(
+          covers_dpm = DPMBase.project,
+          name = "Epic",
+          parent = deliverable
+      ]
+  )
+  story = vision.children.append(
+      TaxoDef(
+          covers_dpm = DPMBase.project,
+          name = "Story",
+          parent = epic
+      ]
+  )
+  task = vision.children.append(
+      TaxoDef(
+          covers_dpm = DPMBase.task,
+          name = "Task",
+          parent = deliverable
+      ]
+  )
+
+
+  d1 = TaxLevelForDomain(taxo_type=taxonomy, name="vBOSS")
+  d1.add_sublevel(taxo_type=vision, name=
+
+      
+#+end_src
