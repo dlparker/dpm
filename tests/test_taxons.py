@@ -16,45 +16,45 @@ from dpm.store.models import (ModelDB, TaskRecord, ProjectRecord, PhaseRecord,
                                 DPMManager, DomainCatalog)
 
 from dpm.taxons import (DPMBase,
-                        TaxoDef,
-                        TaxoLevel,
-                        TaxoLevelForDomain,
-                        TaxoLevelForProject,
-                        TaxoLevelForPhase,
-                        TaxoLevelForTask
+                        TaxonDef,
+                        TaxonLevel,
+                        TaxonLevelForDomain,
+                        TaxonLevelForProject,
+                        TaxonLevelForPhase,
+                        TaxonLevelForTask
                         )
 
 def make_sw_taxonomy():
-    taxonomy = TaxoDef(
+    taxonomy = TaxonDef(
         covers_dpm = DPMBase.domain,
         name = "Software Project"
     )
-    vision = TaxoDef(
+    vision = TaxonDef(
         covers_dpm = DPMBase.project,
         name = "Vision",
         parent = taxonomy,
         allow_multiple = False
     )
     taxonomy.children.append(vision)
-    deliverable = TaxoDef(
+    deliverable = TaxonDef(
         covers_dpm = DPMBase.project,
         name = "Deliverable",
         parent = vision
     )
     vision.children.append(deliverable)
-    epic = TaxoDef(
+    epic = TaxonDef(
         covers_dpm = DPMBase.project,
         name = "Epic",
         parent = deliverable
     )
     deliverable.children.append(epic)
-    story = TaxoDef(
+    story = TaxonDef(
         covers_dpm = DPMBase.phase,
         name = "Story",
         parent = epic
     )
     epic.children.append(story)
-    task = TaxoDef(
+    task = TaxonDef(
         covers_dpm = DPMBase.task,
         name = "Task",
         parent = deliverable
@@ -89,35 +89,33 @@ def test_auto_fill_exampe_1(create_db, tmp_path):
     catalog = DomainCatalog.from_json_config(config_path)
     
     taxonomy_def = make_sw_taxonomy()
-    from pprint import pprint
-    pprint(taxonomy_def)
-    top = TaxoLevelForDomain(catalog=catalog, taxo_def=taxonomy_def, name="TestDomain")
+    top = TaxonLevelForDomain(catalog=catalog, taxo_def=taxonomy_def, name="TestDomain")
     # Okay,so you'd never really do this, just inferring a structure of inferences from
     # the structure of the taxonomy, but it is handy for testing
     def add_level(parent, level_index=0):
         for index, child_def in enumerate(parent.taxo_def.children):
             if child_def.covers_dpm == DPMBase.project:
-                if isinstance(parent, TaxoLevelForDomain):
+                if isinstance(parent, TaxonLevelForDomain):
                     domain_level = parent
                     parent_level = None
                 else:
                     domain_level = parent.domain_level
                     parent_level = parent
-                level = TaxoLevelForProject(domain_level=domain_level,
+                level = TaxonLevelForProject(domain_level=domain_level,
                                             parent_level=parent_level,
                                             taxo_def=child_def,
                                             name=f"Level {level_index} item {index}")
             elif child_def.covers_dpm == DPMBase.phase:
-                level = TaxoLevelForPhase(project_level=parent,taxo_def=child_def, name=f"Level {level_index} item {index}")
+                level = TaxonLevelForPhase(project_level=parent,taxo_def=child_def, name=f"Level {level_index} item {index}")
             elif child_def.covers_dpm == DPMBase.task:
-                level = TaxoLevelForTask(parent_level=parent, taxo_def=child_def, name=f"Level {level_index} item {index}")
+                level = TaxonLevelForTask(parent_level=parent, taxo_def=child_def, name=f"Level {level_index} item {index}")
             else:
                 raise Exception('')
             add_level(level, level_index+1)
     add_level(top, 0)
-
-    breakpoint()
-    pprint(top)
+    top_kids =  top.get_children()
+    
+    
 
 
 def footest_phase_tasks(create_db):

@@ -11,14 +11,14 @@ class DPMBase(StrEnum):
     phase = auto()
     task = auto()
     
-class TaxoDef:
+class TaxonDef:
     """ Used to define a taxonomy"""
     
     def __init__(self,
                  covers_dpm: DPMBase,
                  name: str,
                  allow_multiple: Optional[bool] = True,
-                 parent: Optional['TaxoDef'] = None):
+                 parent: Optional['TaxonDef'] = None):
         self.covers_dpm = covers_dpm
         self.name = name,
         self.allow_multiple = allow_multiple,
@@ -26,29 +26,37 @@ class TaxoDef:
         self.children = []
 
 
-class TaxoLevel:
+class TaxonLevel:
     """ Used to hold a taxonomy instance"""
-    def __init__(self, taxo_type: DPMBase, taxo_def: TaxoDef, name:str):
+    def __init__(self, taxo_type: DPMBase, taxo_def: TaxonDef, name:str):
         self.taxo_type = taxo_type
         self.taxo_def = taxo_def
         self.name = name
         self.dpm_model = None
-        
-class TaxoLevelForDomain(TaxoLevel):
 
-    def __init__(self, catalog: DomainCatalog, taxo_def: TaxoDef, name:str):
+    def get_children(self)-> list | None:
+        raise NotImplementedError
+    
+class TaxonLevelForDomain(TaxonLevel):
+
+    def __init__(self, catalog: DomainCatalog, taxo_def: TaxonDef, name:str):
         super().__init__(DPMBase.domain, taxo_def, name)
         if name not in catalog.pmdb_domains:
             raise Exception(f'must create domain "{name}" before trying to set a taxonomy level using it')
         self.dpm_domain = catalog.pmdb_domains[name]
           
-class TaxoLevelForProject(TaxoLevel):
+    def get_children(self)-> list | None:
+        db = self.dpm_domain.db
+        projs = db.get_projects_by_parent_id(None)
+        
+        
+class TaxonLevelForProject(TaxonLevel):
 
     def __init__(self,
-                 domain_level:TaxoLevelForDomain,
-                 taxo_def: TaxoDef,
+                 domain_level:TaxonLevelForDomain,
+                 taxo_def: TaxonDef,
                  name:str,
-                 parent_level: Optional['TaxoLevelForProject'] = None,
+                 parent_level: Optional['TaxonLevelForProject'] = None,
                  description:Optional[str] = None):
         super().__init__(DPMBase.project, taxo_def, name)
         self.description = description
@@ -58,11 +66,11 @@ class TaxoLevelForProject(TaxoLevel):
         parent_project_id = None if parent_level is None else parent_level.dpm_model.parent_id 
         self.dpm_model = self.db.add_project(self.name, self.description, parent_id=parent_project_id)
       
-class TaxoLevelForPhase(TaxoLevel):
+class TaxonLevelForPhase(TaxonLevel):
     def __init__(self,
-                 taxo_def: TaxoDef,
+                 taxo_def: TaxonDef,
                  name:str,
-                 project_level: TaxoLevelForProject,
+                 project_level: TaxonLevelForProject,
                  description:Optional[str] = None):
         super().__init__(DPMBase.phase, taxo_def, name)
         self.project_level = project_level
@@ -71,11 +79,11 @@ class TaxoLevelForPhase(TaxoLevel):
         self.db = self.domain_level.dpm_domain.db
         self.dpm_model = self.db.add_phase(self.name, self.description, project_id=project_level.dpm_model.project_id)
       
-class TaxoLevelForTask(TaxoLevel):
+class TaxonLevelForTask(TaxonLevel):
     
     def __init__(self,
-                 taxo_def: TaxoDef,
-                 name:str, parent_level:[TaxoLevelForProject | TaxoLevelForPhase],
+                 taxo_def: TaxonDef,
+                 name:str, parent_level:[TaxonLevelForProject | TaxonLevelForPhase],
                  description:Optional[str] = None):
         super().__init__(DPMBase.domain, taxo_def, name)
         self.parent_level = parent_level
