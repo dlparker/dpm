@@ -4,8 +4,11 @@ from datetime import datetime
 from typing import Optional, Union
 import json
 import logging
+from enum import StrEnum, auto
 
 from sqlmodel import SQLModel, Field, Session, create_engine, select, Relationship
+
+from dpm.store.taxons import TaxonDef, TaxonLevel, DPMBase
 
 log = logging.getLogger(__name__)
 
@@ -725,17 +728,18 @@ class ModelDB:
                 record._task = task
             else:
                 task = session.exec(select(Task).where(Task.id == record.task_id)).first()
-                task.name = record.name
-                task.name_lower = record.name.lower()
-                task.description = record.description
-                task.status = record.status
-                task.project_id = record.project_id
-                task.phase_id = record.phase_id
-                task.save_time = datetime.now()
-                session.add(task)
-                session.commit()
-                session.refresh(task)
-                record._task = task
+                if task:
+                    task.name = record.name
+                    task.name_lower = record.name.lower()
+                    task.description = record.description
+                    task.status = record.status
+                    task.project_id = record.project_id
+                    task.phase_id = record.phase_id
+                    task.save_time = datetime.now()
+                    session.add(task)
+                    session.commit()
+                    session.refresh(task)
+                    record._task = task
             return record
 
     def delete_task_record(self, record):
@@ -1100,6 +1104,8 @@ class ModelDB:
                 follows_id = last_phase.id if last_phase.id != phase_id else None
 
             phase = session.exec(select(Phase).where(Phase.id == phase_id)).first()
+            if not phase:
+                raise Exception("consistency error")
             phase.project_id = new_project_id
             phase.position = position
             phase.save_time = datetime.now()
@@ -1181,6 +1187,265 @@ class ModelDB:
         otb.close()
         return otb.filepath
 
+    # TaxonDef methods
+    def add_taxon_def(self, name, covers_dpm, allow_multiple=True, parent_id=None):
+        from dpm.store.taxons import TaxonDefRecord
+        with Session(self.engine) as session:
+            existing = session.exec(select(TaxonDef).where(TaxonDef.name_lower == name.lower())).first()
+            if existing:
+                raise Exception(f"Already have a taxon def named {name}")
+            if parent_id is not None:
+                parent = session.exec(select(TaxonDef).where(TaxonDef.id == parent_id)).first()
+                if not parent:
+                    raise Exception(f"Invalid parent_id supplied")
+            taxon_def = TaxonDef(
+                name=name,
+                name_lower=name.lower(),
+                covers_dpm=str(covers_dpm),
+                allow_multiple=allow_multiple,
+                parent_id=parent_id,
+            )
+            session.add(taxon_def)
+            session.commit()
+            session.refresh(taxon_def)
+            return TaxonDefRecord(self, taxon_def)
+
+    def get_taxon_def_by_id(self, taxon_def_id):
+        from dpm.store.taxons import TaxonDefRecord
+        with Session(self.engine) as session:
+            td = session.exec(select(TaxonDef).where(TaxonDef.id == taxon_def_id)).first()
+            if td:
+                return TaxonDefRecord(self, td)
+            return None
+
+    def get_taxon_def_by_name(self, name):
+        from dpm.store.taxons import TaxonDefRecord
+        with Session(self.engine) as session:
+            td = session.exec(select(TaxonDef).where(TaxonDef.name_lower == name.lower())).first()
+            if td:
+                return TaxonDefRecord(self, td)
+            return None
+
+    def get_taxon_defs(self):
+        from dpm.store.taxons import TaxonDefRecord
+        with Session(self.engine) as session:
+            tds = session.exec(select(TaxonDef).order_by(TaxonDef.id)).all()
+            return [TaxonDefRecord(self, td) for td in tds]
+
+    def get_taxon_defs_by_parent_id(self, parent_id):
+        from dpm.store.taxons import TaxonDefRecord
+        with Session(self.engine) as session:
+            if parent_id is None:
+                tds = session.exec(select(TaxonDef).where(TaxonDef.parent_id == None).order_by(TaxonDef.id)).all()
+            else:
+                tds = session.exec(select(TaxonDef).where(TaxonDef.parent_id == parent_id).order_by(TaxonDef.id)).all()
+            return [TaxonDefRecord(self, td) for td in tds]
+
+    def save_taxon_def_record(self, record):
+        from dpm.store.taxons import TaxonDefRecord
+        with Session(self.engine) as session:
+            if record.taxon_def_id is not None:
+                existing = session.exec(select(TaxonDef).where(TaxonDef.id == record.taxon_def_id)).first()
+                if not existing:
+                    raise Exception(f"Trying to save taxon def with invalid taxon_def_id")
+
+            dup = session.exec(
+                select(TaxonDef).where(TaxonDef.name_lower == record.name.lower(), TaxonDef.id != record.taxon_def_id)
+            ).first()
+            if dup:
+                raise Exception(f"Already have a taxon def named {record.name}")
+
+            if record.taxon_def_id is None:
+                td = TaxonDef(
+                    name=record.name,
+                    name_lower=record.name.lower(),
+                    covers_dpm=str(record.covers_dpm),
+                    allow_multiple=record.allow_multiple,
+                    parent_id=record.parent_id,
+                )
+                session.add(td)
+                session.commit()
+                session.refresh(td)
+                record._taxon_def = td
+            else:
+                td = session.exec(select(TaxonDef).where(TaxonDef.id == record.taxon_def_id)).first()
+                td.name = record.name
+                td.name_lower = record.name.lower()
+                td.covers_dpm = str(record.covers_dpm)
+                td.allow_multiple = record.allow_multiple
+                td.parent_id = record.parent_id
+                td.save_time = datetime.now()
+                session.add(td)
+                session.commit()
+                session.refresh(td)
+                record._taxon_def = td
+            return record
+
+    def delete_taxon_def_record(self, record):
+        with Session(self.engine) as session:
+            td = session.exec(select(TaxonDef).where(TaxonDef.id == record.taxon_def_id)).first()
+            if td:
+                session.delete(td)
+                session.commit()
+
+    # TaxonLevel methods
+    def add_taxon_level(self, name, taxo_type, taxon_def_id, parent_level_id=None,
+                        domain_name=None, project_id=None, phase_id=None, task_id=None,
+                        description=None):
+        from dpm.store.taxons import TaxonLevelRecord
+        with Session(self.engine) as session:
+            taxon_level = TaxonLevel(
+                name=name,
+                name_lower=name.lower(),
+                taxo_type=str(taxo_type),
+                taxon_def_id=taxon_def_id,
+                parent_level_id=parent_level_id,
+                domain_name=domain_name,
+                project_id=project_id,
+                phase_id=phase_id,
+                task_id=task_id,
+                description=description,
+            )
+            session.add(taxon_level)
+            session.commit()
+            session.refresh(taxon_level)
+            return TaxonLevelRecord(self, taxon_level)
+
+    def add_taxon_level_for_domain(self, catalog, taxon_def_record, name):
+        """Create a taxon level for a domain."""
+        if name not in catalog.pmdb_domains:
+            raise Exception(f'must create domain "{name}" before trying to set a taxonomy level using it')
+        return self.add_taxon_level(
+            name=name,
+            taxo_type=DPMBase.domain,
+            taxon_def_id=taxon_def_record.taxon_def_id,
+            domain_name=name,
+        )
+
+    def add_taxon_level_for_project(self, domain_level, taxon_def_record, name,
+                                     parent_level=None, description=None):
+        """Create a taxon level for a project, also creating the project."""
+        parent_project_id = None if parent_level is None else parent_level.dpm_model.project_id
+        project = self.add_project(name, description, parent_id=parent_project_id)
+        parent_level_id = parent_level.taxon_level_id if parent_level else domain_level.taxon_level_id
+        return self.add_taxon_level(
+            name=name,
+            taxo_type=DPMBase.project,
+            taxon_def_id=taxon_def_record.taxon_def_id,
+            parent_level_id=parent_level_id,
+            domain_name=domain_level.domain_name,
+            project_id=project.project_id,
+            description=description,
+        )
+
+    def add_taxon_level_for_phase(self, project_level, taxon_def_record, name, description=None):
+        """Create a taxon level for a phase, also creating the phase."""
+        phase = self.add_phase(name, description, project_id=project_level.project_id)
+        return self.add_taxon_level(
+            name=name,
+            taxo_type=DPMBase.phase,
+            taxon_def_id=taxon_def_record.taxon_def_id,
+            parent_level_id=project_level.taxon_level_id,
+            domain_name=project_level.domain_name,
+            project_id=project_level.project_id,
+            phase_id=phase.phase_id,
+            description=description,
+        )
+
+    def add_taxon_level_for_task(self, parent_level, taxon_def_record, name, description=None):
+        """Create a taxon level for a task, also creating the task."""
+        if parent_level.taxo_type == DPMBase.phase:
+            project_id = parent_level.project_id
+            phase_id = parent_level.phase_id
+        else:
+            project_id = parent_level.project_id
+            phase_id = None
+        task = self.add_task(name=name, description=description,
+                            project_id=project_id, phase_id=phase_id)
+        return self.add_taxon_level(
+            name=name,
+            taxo_type=DPMBase.task,
+            taxon_def_id=taxon_def_record.taxon_def_id,
+            parent_level_id=parent_level.taxon_level_id,
+            domain_name=parent_level.domain_name,
+            project_id=project_id,
+            phase_id=phase_id,
+            task_id=task.task_id,
+            description=description,
+        )
+
+    def get_taxon_level_by_id(self, taxon_level_id):
+        from dpm.store.taxons import TaxonLevelRecord
+        with Session(self.engine) as session:
+            tl = session.exec(select(TaxonLevel).where(TaxonLevel.id == taxon_level_id)).first()
+            if tl:
+                return TaxonLevelRecord(self, tl)
+            return None
+
+    def get_taxon_levels_by_parent_id(self, parent_level_id):
+        from dpm.store.taxons import TaxonLevelRecord
+        with Session(self.engine) as session:
+            if parent_level_id is None:
+                tls = session.exec(select(TaxonLevel).where(TaxonLevel.parent_level_id == None).order_by(TaxonLevel.id)).all()
+            else:
+                tls = session.exec(select(TaxonLevel).where(TaxonLevel.parent_level_id == parent_level_id).order_by(TaxonLevel.id)).all()
+            return [TaxonLevelRecord(self, tl) for tl in tls]
+
+    def save_taxon_level_record(self, record):
+        from dpm.store.taxons import TaxonLevelRecord
+        with Session(self.engine) as session:
+            if record.taxon_level_id is not None:
+                existing = session.exec(select(TaxonLevel).where(TaxonLevel.id == record.taxon_level_id)).first()
+                if not existing:
+                    raise Exception(f"Trying to save taxon level with invalid taxon_level_id")
+
+            if record.taxon_level_id is None:
+                tl = TaxonLevel(
+                    name=record.name,
+                    name_lower=record.name.lower(),
+                    taxo_type=str(record.taxo_type),
+                    taxon_def_id=record.taxon_def_id,
+                    parent_level_id=record.parent_level_id,
+                    domain_name=record.domain_name,
+                    project_id=record.project_id,
+                    phase_id=record.phase_id,
+                    task_id=record.task_id,
+                    description=record.description,
+                )
+                session.add(tl)
+                session.commit()
+                session.refresh(tl)
+                record._taxon_level = tl
+            else:
+                tl = session.exec(select(TaxonLevel).where(TaxonLevel.id == record.taxon_level_id)).first()
+                tl.name = record.name
+                tl.name_lower = record.name.lower()
+                tl.taxo_type = str(record.taxo_type)
+                tl.taxon_def_id = record.taxon_def_id
+                tl.parent_level_id = record.parent_level_id
+                tl.domain_name = record.domain_name
+                tl.project_id = record.project_id
+                tl.phase_id = record.phase_id
+                tl.task_id = record.task_id
+                tl.description = record.description
+                tl.save_time = datetime.now()
+                session.add(tl)
+                session.commit()
+                session.refresh(tl)
+                record._taxon_level = tl
+            return record
+
+    def delete_taxon_level_record(self, record):
+        with Session(self.engine) as session:
+            tl = session.exec(select(TaxonLevel).where(TaxonLevel.id == record.taxon_level_id)).first()
+            if tl:
+                session.delete(tl)
+                session.commit()
+
+class DomainMode(StrEnum):
+    default = auto()
+    software = auto() # use Vision, Deliverable, Epic, Story, Task Taxons
+    software_suite = auto() # use Vision, Subsystem, Deliverable, Epic, Story, Task Taxons
 
 @dataclass
 class PMDBDomain:
@@ -1188,7 +1453,7 @@ class PMDBDomain:
     db_path: Path
     description: str
     db: ModelDB
-
+    domain_mode: Optional[DomainMode] = DomainMode.default
 
 @dataclass
 class DomainCatalog:

@@ -680,7 +680,7 @@ class PMDBUIRouter:
                 phase.name = name
                 phase.description = description if description else None
                 if phase.project_id != project_id_int:
-                    phase.move_phase_and_tasks_to_project(project_id_int)
+                    db.move_phase_and_tasks_to_project(phase.phase_id, project_id_int)
                 phase.save()
 
                 context = {
@@ -809,7 +809,7 @@ class PMDBUIRouter:
                 phase.name = name
                 phase.description = description if description else None
                 if phase.project_id != project_id_int:
-                    phase.move_phase_and_tasks_to_project(project_id_int)
+                    db.move_phase_and_tasks_to_project(phase.phase_id, project_id_int)
                 phase.save()
 
                 # Return empty response with trigger to close modal
@@ -969,7 +969,7 @@ class PMDBUIRouter:
 
             # Parse blocker IDs from form data
             form_data = await request.form()
-            blocker_ids = [int(bid) for bid in form_data.getlist("blocker_ids") if bid]
+            blocker_ids = [int(bid) for bid in form_data.getlist("blocker_ids") if bid] # type: ignore
 
             try:
                 task = db.add_task(
@@ -1250,7 +1250,7 @@ class PMDBUIRouter:
                 return RedirectResponse(url=request.url_for("pm:domains"))
             db = self._get_db(domain)
             # get fresh copy
-            project = db.get_project_by_id(project.project_id)
+            project = db.get_project_by_id(project.project_id) # type: ignore
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found")
             context =  {
@@ -1279,7 +1279,7 @@ class PMDBUIRouter:
                 return RedirectResponse(url=request.url_for("pm:domains"))
             db = self._get_db(domain)
             # get fresh copy
-            phase = db.get_phase_by_id(phase.phase_id)
+            phase = db.get_phase_by_id(phase.phase_id) # type: ignore
             if not phase:
                 raise HTTPException(status_code=404, detail="Phase not found")
             context =  {
@@ -1308,7 +1308,7 @@ class PMDBUIRouter:
                 return RedirectResponse(url=request.url_for("pm:domains"))
             db = self._get_db(domain)
             # get fresh copy
-            task = db.get_task_by_id(task.task_id)
+            task = db.get_task_by_id(task.task_id) # type: ignore
             if not task:
                 raise HTTPException(status_code=404, detail="Task not found")
             blockers = task.get_blockers(only_not_done=False)
@@ -1335,7 +1335,7 @@ class PMDBUIRouter:
                 )
             
         @router.get("/{domain}/phase/{phase_id}", response_class=HTMLResponse, name="pm:phase")
-        async def pm_phase_tasks(request: Request, domain: str, phase_id: int) -> Response:
+        async def pm_phase(request: Request, domain: str, phase_id: int) -> Response:
             if domain == 'default':
                 domain = self.dpm_manager.get_default_domain()
                 return RedirectResponse(url=request.url_for("pm:phase-tasks", domain=domain,
@@ -1486,11 +1486,11 @@ class PMDBUIRouter:
                 phase = db.get_phase_by_id(task.phase_id) if task.phase_id else None
                 blockers = task.get_blockers(only_not_done=True)
 
-                task.project_name = project.name if project else None
-                task.phase_name = phase.name if phase else None
-                task.blockers = blockers
+                task.project_name = project.name if project else None # type: ignore
+                task.phase_name = phase.name if phase else None # type: ignore
+                task.blockers = blockers # type: ignore
                 # JSON for client-side validation
-                task.blockers_json = json.dumps([{"id": b.task_id, "name": b.name} for b in blockers])
+                task.blockers_json = json.dumps([{"id": b.task_id, "name": b.name} for b in blockers]) # type: ignore
                 return task
 
             enriched_tasks = [enrich_task(t) for t in all_tasks]
@@ -1643,7 +1643,7 @@ class PMDBUIRouter:
 
             # Parse blocker IDs
             form_data = await request.form()
-            new_blocker_ids = set(int(bid) for bid in form_data.getlist("blocker_ids") if bid)
+            new_blocker_ids = set(int(bid) for bid in form_data.getlist("blocker_ids") if bid) # type: ignore
 
             try:
                 task.name = name

@@ -168,7 +168,7 @@ class PMDBAPIService:
         else:
             projects = db.get_projects()
         return [ProjectResponse(
-            project_id=p.project_id,
+            project_id=p.project_id, # type: ignore
             name=p.name,
             description=p.description,
             parent_id=p.parent_id,
@@ -179,15 +179,15 @@ class PMDBAPIService:
         """Get a project by ID."""
         db = self._get_db(domain)
         project = db.get_project_by_id(project_id)
-        if not project:
-            raise HTTPException(status_code=404, detail="Project not found")
-        return ProjectResponse(
-            project_id=project.project_id,
-            name=project.name,
-            description=project.description,
-            parent_id=project.parent_id,
-            save_time=project.save_time
-        )
+        if project:
+            return ProjectResponse(
+                project_id=project.project_id, # type: ignore
+                name=project.name,
+                description=project.description,
+                parent_id=project.parent_id,
+                save_time=project.save_time
+            )
+        raise HTTPException(status_code=404, detail="Project not found")
 
     async def create_project(self, domain: str, data: ProjectCreate):
         """Create a new project."""
@@ -199,7 +199,7 @@ class PMDBAPIService:
                 parent_id=data.parent_id
             )
             return ProjectResponse(
-                project_id=project.project_id,
+                project_id=project.project_id,# type: ignore
                 name=project.name,
                 description=project.description,
                 parent_id=project.parent_id,
@@ -225,7 +225,7 @@ class PMDBAPIService:
         try:
             project.save()
             return ProjectResponse(
-                project_id=project.project_id,
+                project_id=project.project_id,# type: ignore
                 name=project.name,
                 description=project.description,
                 parent_id=project.parent_id,
@@ -266,7 +266,7 @@ class PMDBAPIService:
             raise HTTPException(status_code=404, detail="Project not found")
         tasks = project.get_tasks()
         return [TaskResponse(
-            task_id=t.task_id,
+            task_id=t.task_id,# type: ignore
             name=t.name,
             description=t.description,
             status=t.status,
@@ -305,7 +305,7 @@ class PMDBAPIService:
         if not phase:
             raise HTTPException(status_code=404, detail="Phase not found")
         return PhaseResponse(
-            phase_id=phase.phase_id,
+            phase_id=phase.phase_id, # type: ignore
             name=phase.name,
             description=phase.description,
             project_id=phase.project_id,
@@ -324,7 +324,7 @@ class PMDBAPIService:
                 follows_id=data.follows_id
             )
             return PhaseResponse(
-                phase_id=phase.phase_id,
+                phase_id=phase.phase_id, # type: ignore
                 name=phase.name,
                 description=phase.description,
                 project_id=phase.project_id,
@@ -353,12 +353,12 @@ class PMDBAPIService:
             # Refresh to get updated follows_id
             phase = db.get_phase_by_id(phase_id)
             return PhaseResponse(
-                phase_id=phase.phase_id,
-                name=phase.name,
-                description=phase.description,
-                project_id=phase.project_id,
-                follows_id=phase.follows_id,
-                save_time=phase.save_time
+                phase_id=phase.phase_id, # type: ignore
+                name=phase.name, # type: ignore
+                description=phase.description, # type: ignore
+                project_id=phase.project_id, # type: ignore
+                follows_id=phase.follows_id, # type: ignore
+                save_time=phase.save_time # type: ignore
             )
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
@@ -379,7 +379,7 @@ class PMDBAPIService:
             raise HTTPException(status_code=404, detail="Phase not found")
         tasks = phase.get_tasks()
         return [TaskResponse(
-            task_id=t.task_id,
+            task_id=t.task_id, # type: ignore
             name=t.name,
             description=t.description,
             status=t.status,
@@ -410,7 +410,7 @@ class PMDBAPIService:
         else:
             tasks = db.get_tasks()
         return [TaskResponse(
-            task_id=t.task_id,
+            task_id=t.task_id, # type: ignore
             name=t.name,
             description=t.description,
             status=t.status,
@@ -426,7 +426,7 @@ class PMDBAPIService:
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
         return TaskResponse(
-            task_id=task.task_id,
+            task_id=task.task_id, # type: ignore
             name=task.name,
             description=task.description,
             status=task.status,
@@ -447,7 +447,7 @@ class PMDBAPIService:
                 phase_id=data.phase_id
             )
             return TaskResponse(
-                task_id=task.task_id,
+                task_id=task.task_id, # type: ignore
                 name=task.name,
                 description=task.description,
                 status=task.status,
@@ -479,7 +479,7 @@ class PMDBAPIService:
         try:
             task.save()
             return TaskResponse(
-                task_id=task.task_id,
+                task_id=task.task_id, # type: ignore
                 name=task.name,
                 description=task.description,
                 status=task.status,
