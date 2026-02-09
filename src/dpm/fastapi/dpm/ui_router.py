@@ -1419,7 +1419,6 @@ class PMDBUIRouter:
 
             base_url = request.url_for("pm:kanban-board", domain=last_domain)
             return RedirectResponse(url=f"{base_url}?project_id={project.project_id}")
-            
 
         @router.get("/{domain}/board", response_class=HTMLResponse, name="pm:kanban-board")
         async def pm_kanban_board(request: Request, domain: str,

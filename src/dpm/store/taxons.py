@@ -110,6 +110,17 @@ class TaxonDefRecord:
     def children(self):
         return self.model_db.get_taxon_defs_by_parent_id(self.taxon_def_id)
 
+    def get_child_by_name(self, name):
+        """Search descendants for a TaxonDefRecord with the given name."""
+        name_lower = name.lower()
+        for child in self.children:
+            if child._taxon_def.name_lower == name_lower:
+                return child
+            found = child.get_child_by_name(name)
+            if found:
+                return found
+        return None
+
     def __repr__(self):
         return f"taxon_def {self.taxon_def_id} {self.name[:20]}"
 
@@ -238,6 +249,37 @@ class TaxonLevelRecord:
             parent = parent.parent_level
         return None
 
+    def add_project_level(self, taxon_def_record:TaxonDefRecord, name:str, description=None):
+        """Add a project sub-level under this level."""
+        domain_level = self.domain_level
+        parent_level = None if self.taxo_type == DPMBase.domain else self
+        return self.model_db.add_taxon_level_for_project(
+            domain_level, taxon_def_record, name,
+            parent_level=parent_level, description=description,
+        )
+
+    def add_phase_level(self, taxon_def_record:TaxonDefRecord, name:str, description=None):
+        """Add a phase sub-level under this project level."""
+        return self.model_db.add_taxon_level_for_phase(
+            self, taxon_def_record, name, description=description,
+        )
+
+    def add_task_level(self, taxon_def_record:TaxonDefRecord, name:str, description=None):
+        """Add a task sub-level under this level."""
+        return self.model_db.add_taxon_level_for_task(
+            self, taxon_def_record, name, description=description,
+        )
+
+    def add_child(self, taxon_def_record:TaxonDefRecord, name:str, description=None):
+        if taxon_def_record.covers_dpm == DPMBase.project:
+            return self.add_project_level(taxon_def_record, name, description)
+        elif taxon_def_record.covers_dpm == DPMBase.phase:
+            return self.add_phase_level(taxon_def_record, name, description)
+        elif taxon_def_record.covers_dpm == DPMBase.task:
+            return self.add_task_level(taxon_def_record, name, description)
+        else:
+            raise Exception(f'no such type "{taxon_def_record.covers_dpm}"')
+            
     def get_children(self):
         return self.model_db.get_taxon_levels_by_parent_id(self.taxon_level_id)
 

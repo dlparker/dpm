@@ -1,7 +1,7 @@
 from pathlib import Path
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, Union
+from typing import Optional
 import json
 import logging
 from enum import StrEnum, auto
@@ -594,7 +594,7 @@ class ModelDB:
     default_file_name = "model_db.sqlite"
     valid_status_values = ("ToDo", "Doing", "Done")
 
-    def __init__(self, store_dir=".", name_override=None, autocreate=False):
+    def __init__(self, store_dir:Path, name_override=None, autocreate=False):
         if name_override:
             name = name_override
         else:
@@ -916,11 +916,11 @@ class ModelDB:
                 record._project = project
             else:
                 project = session.exec(select(Project).where(Project.id == record.project_id)).first()
-                project.name = record.name
-                project.name_lower = record.name.lower()
-                project.description = record.description
-                project.parent_id = record.parent_id
-                project.save_time = datetime.now()
+                project.name = record.name # type: ignore
+                project.name_lower = record.name.lower() # type: ignore
+                project.description = record.description # type: ignore
+                project.parent_id = record.parent_id # type: ignore
+                project.save_time = datetime.now() # type: ignore
                 session.add(project)
                 session.commit()
                 session.refresh(project)
@@ -984,7 +984,7 @@ class ModelDB:
                         Phase.project_id == project_id,
                         Phase.id != phase_id,
                         Phase.position > follows_phase.position
-                    ).order_by(Phase.position)
+                    ).order_by(Phase.position) # type: ignore
                 ).first()
                 if not next_phase:
                     position = follows_phase.position + 1.0
@@ -1570,7 +1570,7 @@ class DPMManager:
     def get_last_domain(self):
         return self.last_domain
 
-    def set_last_project(self, domain:str, project: Union[Project, "ProjectRecord"]):
+    def set_last_project(self, domain:str, project: "ProjectRecord"):
         if domain not in self.domain_catalog.pmdb_domains:
             raise Exception(f"No such domain {domain}")
         self.last_domain = domain
@@ -1584,7 +1584,7 @@ class DPMManager:
     def get_last_project(self):
         return self.last_project
 
-    def set_last_phase(self, domain:str, phase: Union[Phase, "PhaseRecord"]):
+    def set_last_phase(self, domain:str, phase: "PhaseRecord"):
         if domain not in self.domain_catalog.pmdb_domains:
             raise Exception(f"No such domain {domain}")
         self.last_domain = domain
@@ -1599,7 +1599,7 @@ class DPMManager:
     def get_last_phase(self):
         return self.last_phase
 
-    def set_last_task(self, domain:str, task: Union[Task, "TaskRecord"]):
+    def set_last_task(self, domain:str, task: "TaskRecord"):
         if domain not in self.domain_catalog.pmdb_domains:
             raise Exception(f"No such domain {domain}")
         self.last_domain = domain
