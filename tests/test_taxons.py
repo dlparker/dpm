@@ -12,9 +12,8 @@ import json
 import pytest
 from sqlalchemy.util.langhelpers import textwrap
 
-from dpm.store.models import (ModelDB, TaskRecord, ProjectRecord, PhaseRecord,
-                                FilterWrapper, Task, Project, Phase,
-                                DPMManager, DomainCatalog)
+from dpm.store.models import ModelDB,  Task, Project, Phase, Task, DPMManager, DomainCatalog
+from dpm.store.wrappers import TaskRecord, ProjectRecord, PhaseRecord
 
 from dpm.store.taxons import (DPMBase, TaxonDef, TaxonLevel,
                                TaxonDefRecord, TaxonLevelRecord, build_software_suite_taxonomy, build_software_taxonomy)
@@ -232,7 +231,6 @@ def test_sw_suite(create_db, tmp_path):
     assert task_def
     task_1 = story_1.add_child(taxon_def_record=task_def,
                                name="add try hint text_event logic")
-
     assert task_1
     assert isinstance(task_1.dpm_model, TaskRecord)
     

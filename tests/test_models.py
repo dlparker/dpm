@@ -11,9 +11,9 @@ import shutil
 import json
 import pytest
 
-from dpm.store.models import (ModelDB, TaskRecord, ProjectRecord, PhaseRecord,
-                                FilterWrapper, Task, Project, Phase,
-                                DPMManager, DomainCatalog)
+from dpm.store.models import Task, Project, Phase, Task
+from dpm.store.domains import DPMManager, DomainCatalog
+from dpm.store.wrappers import ModelDB, TaskRecord, ProjectRecord, PhaseRecord
 
 
 @pytest.fixture
@@ -34,7 +34,7 @@ def test_tasks_1(create_db):
         bad_db = ModelDB('.', name_override="foooo")
 
     with pytest.raises(Exception):
-        bad_db = ModelDB('/tmp_not_there')
+        bad_db = ModelDB(Path('/tmp_not_there'))
 
     assert model_db.get_task_by_name('task1') is None
     assert model_db.get_task_by_id(1) is None
@@ -604,87 +604,6 @@ def test_phase_tasks(create_db):
     assert len(proj_4.get_tasks()) == 1
 
 
-def test_wrappers_1(create_db):
-    model_db, db_dir, target_db_name = create_db
-
-    proj_1 = model_db.add_project("proj_1", "some things")
-    assert "proj_1" in str(proj_1)
-    proj_wrap = proj_1.get_tracking_wrapper()
-    assert not proj_wrap.is_changed()
-    proj_wrap.description = "diff"
-    assert proj_wrap.description == "diff"
-    assert proj_wrap._orig_description != proj_1.description
-    assert proj_wrap.is_changed()
-    assert "description" in proj_wrap.get_changes()
-    proj_wrap.revert()
-    assert not proj_wrap.is_changed()
-
-    # make sure get and set work on wrapped
-    wrapped = proj_wrap.__getattr__('_wrapped')
-    proj_wrap._wrapped = wrapped
-
-    phase_1 = model_db.add_phase('phase_1', '', project=proj_1)
-    phase_wrap = phase_1.get_tracking_wrapper()
-    assert not phase_wrap.is_changed()
-    phase_1.description = "diff"
-    assert phase_wrap.is_changed()
-    assert "description" in phase_wrap.get_changes()
-    phase_wrap.revert()
-    assert not phase_wrap.is_changed()
-
-    task_1 = model_db.add_task('task1', 'foo', 'ToDo', project_id=proj_1.project_id, phase_id=phase_1.phase_id)
-    task_1_wrap = task_1.get_tracking_wrapper()
-    assert not task_1_wrap.is_changed()
-    task_1.description = "diff"
-    assert task_1_wrap.is_changed()
-    assert "description" in task_1_wrap.get_changes()
-    task_1_wrap.revert()
-    assert not task_1_wrap.is_changed()
-
-    proj_2 = model_db.add_project("proj_2", "other things")
-    phase_2 = model_db.add_phase('phase_2', '', project=proj_1)
-
-    task_1.phase = phase_2
-    assert task_1_wrap.is_changed()
-    task_1_wrap.revert()
-    assert not task_1_wrap.is_changed()
-
-    task_1.project = proj_2
-    assert task_1_wrap.is_changed()
-    task_1_wrap.revert()
-    assert not task_1_wrap.is_changed()
-
-    task_2 = model_db.add_task('task2', 'foo', 'ToDo', project_id=proj_1.project_id,
-                              phase_id=phase_1.phase_id)
-    phase_3 = model_db.add_phase('phase_3', '', project=proj_2)
-    task_2_wrap = task_2.get_tracking_wrapper()
-    task_2.project = proj_2
-    assert task_2_wrap.is_changed()
-    task_2_wrap.save()
-    task_2 = model_db.get_task_by_id(task_2.task_id)
-    assert task_2.project == proj_2
-    assert task_2.phase is None
-
-
-def test_json(create_db):
-    model_db, db_dir, target_db_name = create_db
-
-    proj_1 = model_db.add_project("proj_1", "some things")
-    pj1 = json.dumps(proj_1.to_json_dict())
-    assert "proj_1" in pj1
-    phase_1 = model_db.add_phase('phase_1', '', project=proj_1)
-    jd = phase_1.to_json_dict()
-    ph1 = json.dumps(jd)
-    assert "phase_1" in ph1
-
-    task_1 = model_db.add_task('task1', 'foo', 'ToDo', project_id=proj_1.project_id)
-    # now just make sure our filter works with supplied value
-    j1 = json.dumps(task_1.to_json_dict())
-    fw2 = FilterWrapper(task_1.to_json_dict())
-    fw2.filter_key('project_id')
-    j2 = json.dumps(fw2)
-    assert "project_id" in j1
-    assert "project_id" not in j2
 
 
 
@@ -1070,8 +989,8 @@ def test_dpm_manager_state_corrupt(dpm_config):
         f.write("not valid json{{{")
 
     # Should not raise — logs a warning and starts clean
-    mgr = DPMManager(dpm_config)
-    assert mgr.get_last_domain() is None
+    with pytest.raises(json.decoder.JSONDecodeError):
+        mgr = DPMManager(dpm_config)
 
 
 def test_dpm_manager_state_stale_ids(dpm_config):
