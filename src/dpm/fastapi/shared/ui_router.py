@@ -5,7 +5,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, Response
 
 from dpm.fastapi.ops import ServerOps
-from dpm.store.models import DPMManager
+from dpm.store.domains import DPMManager
 
 logger = logging.getLogger("UIRouter")
 

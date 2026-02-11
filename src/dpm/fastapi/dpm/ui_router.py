@@ -9,7 +9,8 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from dpm.fastapi.ops import ServerOps
-from dpm.store.models import DPMManager, ModelDB, TaskRecord
+from dpm.store.wrappers import  ModelDB, TaskRecord
+from dpm.store.domains import DPMManager
 
 logger = logging.getLogger("UIRouter")
 

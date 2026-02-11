@@ -12,7 +12,8 @@ from jinja2_fragments.fastapi import Jinja2Blocks
 from jinja2 import Environment, ChoiceLoader, FileSystemLoader  # For multiple directories
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from dpm.store.models import DPMManager, ModelDB, DomainCatalog, Phase, Project, Task
+from dpm.store.domains import DPMManager
+
 from dpm.fastapi.ops import ServerOps
 from dpm.fastapi.dpm.api_router import PMDBAPIService
 from dpm.fastapi.dpm.ui_router import PMDBUIRouter

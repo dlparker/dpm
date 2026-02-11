@@ -7,7 +7,8 @@ import logging
 from enum import StrEnum, auto
 
 from sqlmodel import SQLModel, Field, Relationship
-from dpm.store.sw_models import Epic
+from dpm.store.sw_models import Vision, Subsystem, Deliverable, Epic, Story, SWTask
+
 
 log = logging.getLogger(__name__)
 
@@ -32,6 +33,9 @@ class Project(SQLModel, table=True):
     phases: list["Phase"] = Relationship(back_populates="project")
     tasks: list["Task"] = Relationship(back_populates="project")
 
+    vision: Optional[Vision] = Relationship(back_populates="project")
+    subsystem: Optional[Subsystem] = Relationship(back_populates="project")
+    deliverable: Optional[Deliverable] = Relationship(back_populates="project")
     epic: Optional[Epic] = Relationship(back_populates="project")
  
 class Phase(SQLModel, table=True):
@@ -48,6 +52,7 @@ class Phase(SQLModel, table=True):
     project: Optional[Project] = Relationship(back_populates="phases")
     tasks: list["Task"] = Relationship(back_populates="phase")
 
+    story: Optional[Story] = Relationship(back_populates="phase")
 
 class Task(SQLModel, table=True):
     __table_args__ = {'sqlite_autoincrement': True}
@@ -64,4 +69,5 @@ class Task(SQLModel, table=True):
     project: Optional[Project] = Relationship(back_populates="tasks")
     phase: Optional[Phase] = Relationship(back_populates="tasks")
 
+    sw_task: Optional[SWTask] = Relationship(back_populates="task")
     
