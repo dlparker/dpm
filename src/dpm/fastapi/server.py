@@ -27,7 +27,7 @@ template_paths = {
 
 class DPMServer(ServerOps):
 
-    def __init__(self, config_path: os.PathLike):
+    def __init__(self, config_path: Path):
         self.dpm_manager = DPMManager(config_path)
 
         # Set up Jinja2 templates

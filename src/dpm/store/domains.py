@@ -25,7 +25,7 @@ class DomainCatalog:
     pmdb_domains: dict[str,PMDBDomain] = field(default_factory=dict[str,PMDBDomain])
 
     @classmethod
-    def from_json_config(cls, config_path):
+    def from_json_config(cls, config_path:Path):
         with open(config_path) as f:
             config = json.load(f)
         assert "databases" in config
@@ -58,7 +58,7 @@ class DomainCatalog:
 
 class DPMManager:
 
-    def __init__(self, config_path: str):
+    def __init__(self, config_path: Path):
         self._config_path = Path(config_path)
         self.domain_catalog = DomainCatalog.from_json_config(self._config_path)
         self.last_domain = None
