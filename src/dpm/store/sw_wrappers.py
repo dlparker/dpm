@@ -1,6 +1,5 @@
-from typing import Optional, TYPE_CHECKING
-from sqlmodel import SQLModel, Field, Session, create_engine, select, Relationship
-
+from typing import Optional
+from sqlmodel import Session, select
 from dpm.store.sw_models import Vision, Subsystem, Deliverable, Epic, Story, SWTask
 from dpm.store.models import Project, Phase, Task
 from dpm.store.domains import PMDBDomain
@@ -174,30 +173,30 @@ class SWModelDB:
                   deliverable: Optional[DeliverableRecord] = None,
                   epic: Optional[Epic] = None) -> StoryRecord:
 
-        parent_id = None
+        project_id = None
         if epic:
-            parent_id = epic.project_id
+            project_id = epic.project_id
         elif deliverable:
-            parent_id = deliverable.project_id
+            project_id = deliverable.project_id
         elif subsystem:
-            parent_id = subsystem.project_id
+            project_id = subsystem.project_id
         elif vision:
-            parent_id = vision.project_id
-        if parent_id is None:
+            project_id = vision.project_id
+        if project_id is None:
             raise Exception(f"cannot add story '{name}' without an Epic, Deliverable, Subsystem of Vision to hang it on")
         
         with Session(self.model_db.engine) as session:
             existing = session.exec(select(Phase).where(Phase.name_lower == name.lower())).first()
             if existing:
                 raise Exception(f"Already have a phase named {name}")
-            p_proj = session.exec(select(Project).where(Project.id == parent_id)).first()
+            p_proj = session.exec(select(Project).where(Project.id == project_id)).first()
             if not p_proj:
-                raise Exception(f"Invalid parent id supplied")
+                raise Exception(f"Invalid project id supplied")
             phase = Phase(
                 name=name,
                 name_lower=name.lower(),
                 description=description or "",
-                project_id=parent_id
+                project_id=project_id
             )
             session.add(phase)
             session.commit()
@@ -210,13 +209,15 @@ class SWModelDB:
             return StoryRecord(self.model_db, story)
 
 
-    def add_task(self, domain: PMDBDomain, name: str,
-                  description: Optional[str] = None,
-                  vision: Optional[VisionRecord] = None,
-                  subsystem: Optional[SubsystemRecord] = None,
-                  deliverable: Optional[DeliverableRecord] = None,
-                  epic: Optional[Epic] = None,
-                  story: Optional[Story] = None,
+    def add_task(self,
+                 domain: PMDBDomain,
+                 name: str,
+                 description: Optional[str] = None,
+                 vision: Optional[VisionRecord] = None,
+                 subsystem: Optional[SubsystemRecord] = None,
+                 deliverable: Optional[DeliverableRecord] = None,
+                 epic: Optional[Epic] = None,
+                 story: Optional[Story] = None,
                  ) -> SWTaskRecord:
 
         project_id = None
@@ -241,7 +242,7 @@ class SWModelDB:
                 raise Exception(f"Already have a task named {name}")
             p_proj = session.exec(select(Project).where(Project.id == project_id)).first()
             if not p_proj:
-                raise Exception(f"Invalid parent id supplied")
+                raise Exception(f"Invalid project id supplied")
             if phase_id:
                 phase = session.exec(select(Phase).where(Phase.id == phase_id)).first()
                 if not phase:

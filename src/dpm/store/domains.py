@@ -3,15 +3,13 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 import json
-import logging
 from enum import StrEnum, auto
 
 from dpm.store.wrappers import ModelDB, ProjectRecord, PhaseRecord, TaskRecord
 
 class DomainMode(StrEnum):
-    default = auto()
-    software = auto() # use Vision, Deliverable, Epic, Story, Task Taxons
-    software_suite = auto() # use Vision, Subsystem, Deliverable, Epic, Story, Task Taxons
+    DEFAULT = auto()
+    SOFTWARE = auto() # use Vision, Subsytem, Deliverable, Epic, Story, Task Taxons
 
 
 @dataclass
@@ -20,7 +18,7 @@ class PMDBDomain:
     db_path: Path
     description: str
     db: ModelDB
-    domain_mode: Optional[DomainMode] = DomainMode.default
+    domain_mode: Optional[DomainMode] = DomainMode.DEFAULT
 
 @dataclass
 class DomainCatalog:
@@ -44,10 +42,15 @@ class DomainCatalog:
             else:
                 raise Exception(f"cannot figure out path string {path_str}")
             assert path.exists()
+            if "domain_mode" in data:
+                mode = DomainMode(data['domain_mode'])
+            else:
+                mode = DomainMode.DEFAULT
             domain = PMDBDomain(name=name,
                                 db_path=path,
                                 description = data['description'],
-                                db=ModelDB(store_dir=path.parent, name_override=path.name)
+                                db=ModelDB(store_dir=path.parent, name_override=path.name),
+                                domain_mode=mode
                                 )
             
             catalog.pmdb_domains[name] = domain

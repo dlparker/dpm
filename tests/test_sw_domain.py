@@ -33,7 +33,8 @@ def test_wrappers_simple(create_db, tmp_path):
         "databases": {
             "TestDomain": {
                 "path": str(db_dir / target_db_name),
-                "description": "Test domain 1"
+                "description": "Test domain 1",
+                "domain_mode": "software"
             }
         }
     }
