@@ -17,11 +17,11 @@ from dpm.store.domains import DPMManager
 from dpm.fastapi.ops import ServerOps
 from dpm.fastapi.dpm.api_router import PMDBAPIService
 from dpm.fastapi.dpm.ui_router import PMDBUIRouter
-from dpm.fastapi.shared.ui_router import UIRouter
+from dpm.fastapi.standalone.ui_router import UIRouter
 
 app_root = Path(__file__).parent.resolve()
 template_paths = {
-    'shared': str(app_root / "shared" / "templates"),
+    'standalone': str(app_root / "standalone" / "templates"),
     'dpm': str(app_root / "dpm"/ "templates")
 }
 
@@ -33,8 +33,8 @@ class DPMServer(ServerOps):
         # Set up Jinja2 templates
         env = Environment(
             loader=ChoiceLoader([
-                FileSystemLoader(template_paths['shared']),  # Shared base.html, etc.
-                FileSystemLoader(template_paths['dpm']),  # Shared base.html, etc.
+                FileSystemLoader(template_paths['standalone']),  # Standalone base.html, etc.
+                FileSystemLoader(template_paths['dpm']),
             ]),
             autoescape=select_autoescape("html", "jinja2"),
             # Optional: add other env settings like trim_blocks=True, lstrip_blocks=True
