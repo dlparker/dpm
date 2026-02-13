@@ -219,8 +219,6 @@ class PMDBAPIService:
         return self._router
 
     def _get_db(self, domain: str) -> ModelDB:
-        if domain == "default":
-            domain = self.dpm_manager.get_default_domain()
         return self.dpm_manager.get_db_for_domain(domain)
 
                                
@@ -233,12 +231,9 @@ class PMDBAPIService:
                                filepath=str(item.db_path), description=item.description)
                 for name, item in self.dpm_manager.get_domains().items()]
 
-    async def list_projects(self, domain: str, parent_id: Optional[int] = None):
+    async def list_projects(self, domain: str):
         db = self._get_db(domain)
-        if parent_id is not None:
-            projects = db.get_projects_by_parent_id(parent_id)
-        else:
-            projects = db.get_projects()
+        projects = db.get_projects()
         return [ProjectResponse(
             project_id=p.project_id, # type: ignore
             name=p.name,
@@ -321,7 +316,7 @@ class PMDBAPIService:
             raise HTTPException(status_code=404, detail="Project not found")
         phases = project.get_phases()
         return [PhaseResponse(
-            phase_id=p.phase_id,
+            phase_id=p.phase_id, #type: ignore
             name=p.name,
             description=p.description,
             project_id=p.project_id,
@@ -350,16 +345,13 @@ class PMDBAPIService:
     # Phase endpoints
     # ========================================================================
 
-    async def list_phases(self, domain: str, project_id: Optional[int] = None):
+    async def list_phases(self, domain: str):
         """List phases, optionally filtered by project."""
         db = self._get_db(domain)
-        if project_id is not None:
-            phases = db.get_phases_by_project_id(project_id)
-        else:
-            # Get all phases from all projects
-            phases = []
-            for project in db.get_projects():
-                phases.extend(project.get_phases())
+        # Get all phases from all projects
+        phases = []
+        for project in db.get_projects():
+            phases.extend(project.get_phases())
         return [PhaseResponse(
             phase_id=p.phase_id,
             name=p.name,
@@ -465,21 +457,11 @@ class PMDBAPIService:
 
     async def list_tasks(
         self,
-        domain: str,
-        status: Optional[str] = None,
-        project_id: Optional[int] = None,
-        phase_id: Optional[int] = None
+        domain: str
     ):
         """List tasks with optional filters."""
         db = self._get_db(domain)
-        if status is not None:
-            tasks = db.get_tasks_by_status(status)
-        elif project_id is not None:
-            tasks = db.get_tasks_by_project_id(project_id)
-        elif phase_id is not None:
-            tasks = db.get_tasks_by_phase_id(phase_id)
-        else:
-            tasks = db.get_tasks()
+        tasks = db.get_tasks()
         return [TaskResponse(
             task_id=t.task_id, # type: ignore
             name=t.name,
@@ -594,7 +576,6 @@ class PMDBAPIService:
                 status_code=400,
                 detail="URL task_id must match blocked_task_id"
             )
-
         blocked_task = db.get_task_by_id(data.blocked_task_id)
         if not blocked_task:
             raise HTTPException(status_code=404, detail="Blocked task not found")

@@ -41,6 +41,7 @@ def full_app_create(tmp_path):
     server = DPMServer(config_path)
     dpm_manager = server.dpm_manager
     domain = dpm_manager.domain_catalog.pmdb_domains[domain_name]
+    
     return dict(app=server.app,
                 domain_name=domain_name,
                 db=domain.db,
@@ -53,6 +54,13 @@ def test_projects_crud_1(full_app_create):
     domain_name = setup_dict['domain_name']
     client = TestClient(setup_dict['app'])
 
+    res = client.get('/api/domains')
+    assert res.status_code == 200
+    tmp = res.json()
+    assert isinstance(tmp, list)
+    assert len(tmp) == 1
+    assert tmp[0]['name'] == domain_name
+    
     project_create_url = f"/api/{domain_name}/projects/"
     project_create = ProjectCreate(name='top_project',
                                    description="project at top of tree")
@@ -114,6 +122,8 @@ def test_projects_crud_1(full_app_create):
     # we cascade (manually) on delete
     assert db.get_project_by_id(project_2_id) is None
 
+    
+
 def make_projects(setup_dict):
     db: ModelDB = setup_dict['db']
     domain_name = setup_dict['domain_name']
@@ -170,6 +180,15 @@ def test_phase_crud_1(full_app_create):
     assert isinstance(tmp, list)
     assert len(tmp) == 1
     assert tmp[0]['phase_id'] == phase.id
+
+    proj_phase_list_url = f"/api/{domain_name}/projects/{proj_2_id}/phases"
+    proj_phase_list_response = client.get(proj_phase_list_url)
+    assert proj_phase_list_response.status_code == 200
+    tmp = proj_phase_list_response.json()
+    assert isinstance(tmp, list)
+    assert len(tmp) == 1
+    assert tmp[0]['phase_id'] == phase.id
+    
 
     phase_1_update = PhaseUpdate(name=phase.name,
                                      description=phase.description + " updated") # type: ignore
@@ -272,13 +291,18 @@ def test_task_crud_1(full_app_create):
     assert task_2_record is not None
     task_2_get_url = f"/api/{domain_name}/tasks/{task_2_id}"
 
-    task_2_update = TaskUpdate(name=task_2_record.name,
-                               description=task_2_record.description + " updated") # type: ignore
-    update_response = client.put(task_2_get_url, json=task_2_update.model_dump())
+    task_1_update = TaskUpdate(name=task.name,
+                               description=task.description + " updated",# type: ignore
+                               status=db.valid_status_values[1],
+                               project_id=phase_record.project_id, 
+                               phase_id=phase_record.phase_id)
+    update_response = client.put(task_get_url, json=task_1_update.model_dump())
     assert update_response.status_code == 200
-    task_2_new_record = db.get_task_by_id(task_2_id)
-    assert task_2_new_record is not None
-    assert task_2_new_record.description == task_2_record.description + " updated" # type: ignore
+    task_1_new_record = db.get_task_by_id(task_1_id)
+    assert task_1_new_record is not None
+    assert task_1_new_record.description == task.description + " updated" # type: ignore
+    assert task_1_new_record.status == db.valid_status_values[1]
+    assert task_1_new_record.phase_id == phase_record.phase_id
 
     blocker_get_url = f"/api/{domain_name}/tasks/{task_1_id}/blockers"
     blocker_list_response = client.get(blocker_get_url)
@@ -339,9 +363,18 @@ def test_exceptions_1(full_app_create):
     
     bad_project_1_update = ProjectUpdate(name="bad_project",
                                      description="") # type: ignore
-    update_response = client.put(bad_project_url, json=bad_project_1_update.model_dump())
-    assert update_response.status_code == 404
+    bad_update_response = client.put(bad_project_url, json=bad_project_1_update.model_dump())
+    assert bad_update_response.status_code == 404
+    bad_delete_response = client.delete(bad_project_url)
+    assert bad_delete_response.status_code == 404
+    
+    bad_proj_phase_list_url = f"/api/{domain_name}/projects/10/phases"
+    bad_proj_phase_list_response = client.get(bad_proj_phase_list_url)
+    assert bad_proj_phase_list_response.status_code == 404
 
+    bad_proj_task_list_url = f"/api/{domain_name}/projects/10/tasks"
+    bad_proj_task_list_response = client.get(bad_proj_task_list_url)
+    assert bad_proj_task_list_response.status_code == 404
 
     project_create_url = f"/api/{domain_name}/projects/"
     project_create = ProjectCreate(name='good',
@@ -355,6 +388,23 @@ def test_exceptions_1(full_app_create):
     update_response = client.put(good_project_url, json=bad_project_1_update_2.model_dump())
     assert update_response.status_code == 400
 
+    bad_phase_url = f"/api/{domain_name}/phases/10"
+    res = client.get(bad_phase_url)
+    assert res.status_code == 404
+
+    bad_phase_update_response = client.put(bad_phase_url, json=bad_project_1_update.model_dump())
+    assert bad_update_response.status_code == 404
+    bad_delete_response = client.delete(bad_project_url)
+    assert bad_delete_response.status_code == 404
+
+
+    bad_phase_url = f"/api/{domain_name}/phases/10"
+    bad_phase_update_1 = PhaseUpdate(name="bad_phase",
+                                     description="") # type: ignore
+    bad_update_response = client.put(bad_phase_url, json=bad_phase_update_1.model_dump())
+    assert bad_update_response.status_code == 404
+
+    
     phase_create_url = f"/api/{domain_name}/phases/"
     phase_create = PhaseCreate(name='bad_phase',
                                project_id=10) # type: ignore
@@ -368,7 +418,35 @@ def test_exceptions_1(full_app_create):
     bad_task_create_response = client.post(task_create_url, json=bad_task_create.model_dump())
     assert bad_task_create_response.status_code == 400
     
+    bad_phase_url = f"/api/{domain_name}/phases/10"
+    bad_phase_update_1 = PhaseUpdate(name="bad_phase",
+                                     description="") # type: ignore
+    bad_update_response = client.put(bad_phase_url, json=bad_phase_update_1.model_dump())
+    assert bad_update_response.status_code == 404
 
+    bad_delete_phase_response = client.delete(bad_phase_url)
+    assert bad_delete_phase_response.status_code == 404
+    
+
+    bad_phase_tasks_url =  f"/api/{domain_name}/phases/10/tasks"
+    assert client.get(bad_phase_tasks_url).status_code == 404
+
+    phase_create = PhaseCreate(name='test_phase',
+                               project_id=project_1.project_id, # type: ignore
+                               description="")
+    create_response = client.post(phase_create_url, json=phase_create.model_dump())
+    assert create_response.status_code == 201
+    phase_record = db.get_phase_by_name("test_phase")
+    phase = phase_record._phase
+    
+    phase_update_url = f"/api/{domain_name}/phases/{phase_record.phase_id}"
+    bad_phase_update_2 = PhaseUpdate(follows_id=10)
+    bad_update_response = client.put(phase_update_url, json=bad_phase_update_2.model_dump())
+    assert bad_update_response.status_code == 400
+
+    bad_task_url = f"/api/{domain_name}/tasks/10"
+    assert client.get(bad_task_url).status_code == 404
+    
     good_task_create = TaskCreate(name='top_task',
                                project_id=project_1.project_id) # type: ignore
     good_task_create_response = client.post(task_create_url, json=good_task_create.model_dump())
@@ -376,26 +454,45 @@ def test_exceptions_1(full_app_create):
 
     task_record = db.get_task_by_id(good_task_create_response.json()['task_id'])
     bad_task_update = TaskUpdate(project_id=10)
-    
     task_get_url = f"/api/{domain_name}/tasks/{task_record.task_id}" # type: ignore
     update_response = client.put(task_get_url, json=bad_task_update.model_dump())
     assert update_response.status_code == 400
+
+    bad_task_update_url = f"/api/{domain_name}/tasks/10" # type: ignore
+    task_update = TaskUpdate(project_id=1)
+    assert client.put(bad_task_update_url, json=bad_task_update.model_dump()).status_code == 404
     
+    assert client.delete(bad_task_update_url).status_code == 404
+    
+    bad_blocker_get_url = f"/api/{domain_name}/tasks/10/blockers" # type: ignore
+    assert client.get(bad_blocker_get_url).status_code == 404
     
     blocker_get_url = f"/api/{domain_name}/tasks/{task_record.task_id}/blockers" # type: ignore
     bad_blocker_create_1 = BlockerCreate(blocked_task_id=task_record.task_id,# type: ignore
-                                       blocking_task_id=10)      
+                                         blocking_task_id=10)      
     bad_blocker_add_response = client.post(blocker_get_url, json=bad_blocker_create_1.model_dump())
     assert bad_blocker_add_response.status_code == 404
 
-
-    bad_blocker_create_2 = BlockerCreate(blocked_task_id=0,# type: ignore
+    bad_blocker_create_2 = BlockerCreate(blocked_task_id=10,
                                          blocking_task_id=task_record.task_id)      # type: ignore
-    bad_blocker_add_response = client.post(blocker_get_url, json=bad_blocker_create_2.model_dump())
-    assert bad_blocker_add_response.status_code == 400
+    bad_blocker_add_response_1 = client.post(blocker_get_url, json=bad_blocker_create_2.model_dump())
+    assert bad_blocker_add_response_1.status_code == 400
+    bad_blocker_add_response_2= client.post(bad_blocker_get_url, json=bad_blocker_create_2.model_dump())
+    assert bad_blocker_add_response_2.status_code == 404
     
     bad_blocker_create_3 = BlockerCreate(blocked_task_id=task_record.task_id,# type: ignore
                                          blocking_task_id=task_record.task_id)      # type: ignore
     bad_blocker_add_response = client.post(blocker_get_url, json=bad_blocker_create_3.model_dump())
     assert bad_blocker_add_response.status_code == 400
+    
+
+    bad_blocked_by_url_1 = f"/api/{domain_name}/tasks/10/blocks"
+    assert client.get(bad_blocked_by_url_1).status_code == 404
+    
+    bad_blocker_delete_url_1 = f"/api/{domain_name}/tasks/10/blockers/11"
+    assert client.delete(bad_blocker_delete_url_1).status_code == 404
+    bad_blocker_delete_url_2 = f"/api/{domain_name}/tasks/{task_record.task_id}/blockers/10"
+    assert client.delete(bad_blocker_delete_url_2).status_code == 404
+
+
     

@@ -104,9 +104,6 @@ class PMDBUIRouter:
 
         @router.get("/nav/{domain}/projects", response_class=HTMLResponse, name="pm:nav-domain-projects")
         async def pm_nav_projects(request: Request, domain: str) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:nav-domain-projects", domain=domain))
             self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
             projects = db.get_projects()
@@ -123,9 +120,6 @@ class PMDBUIRouter:
 
         @router.get("/nav/{domain}/project/{project_id}/children", response_class=HTMLResponse, name="pm:nav-project-children")
         async def pm_nav_project_children(request: Request, domain: str, project_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:nav-project-children", domain=domain, project_id=project_id))
             db = self._get_db(domain)
             project = db.get_project_by_id(project_id)
             if not project:
@@ -151,9 +145,6 @@ class PMDBUIRouter:
 
         @router.get("/nav/{domain}/phase/{phase_id}/tasks", response_class=HTMLResponse, name="pm:nav-phase-tasks")
         async def pm_nav_phase_tasks(request: Request, domain: str, phase_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:nav-phase-tasks", domain=domain, phase_id=phase_id))
             db = self._get_db(domain)
             phase = db.get_phase_by_id(phase_id)
             if not phase:
@@ -179,9 +170,6 @@ class PMDBUIRouter:
 
         @router.get("/{domain}/projects", response_class=HTMLResponse, name="pm:domain-projects")
         async def pm_projects(request: Request, domain: str) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:domain-projects", domain=domain))
             self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
             projects = db.get_projects()
@@ -206,10 +194,6 @@ class PMDBUIRouter:
 
         @router.get("/{domain}/project/{project_id}/children", response_class=HTMLResponse, name="pm:project-children")
         async def pm_project_children(request: Request, domain: str, project_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:project-chidren", domain=domain,
-                                                            project_id=project_id))
             db = self._get_db(domain)
             project = db.get_project_by_id(project_id)
             if not project:
@@ -243,10 +227,6 @@ class PMDBUIRouter:
 
         @router.get("/{domain}/phase/{phase_id}/tasks", response_class=HTMLResponse, name="pm:phase-tasks")
         async def pm_phase_tasks(request: Request, domain: str, phase_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:phase-tasks", domain=domain,
-                                                            phase_id=phase_id))
             db = self._get_db(domain)
             phase = db.get_phase_by_id(phase_id)
             if not phase:
@@ -279,9 +259,6 @@ class PMDBUIRouter:
 
         @router.get("/{domain}/project/new", response_class=HTMLResponse, name="pm:project-create")
         async def pm_project_create(request: Request, domain: str, parent_id: int | None = None) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:project-create", domain=domain))
             self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
             projects = db.get_projects()
@@ -313,8 +290,6 @@ class PMDBUIRouter:
             description: str = Form(""),
             parent_id: str = Form("")
         ) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
 
@@ -346,9 +321,6 @@ class PMDBUIRouter:
 
         @router.get("/{domain}/project/{project_id}/edit", response_class=HTMLResponse, name="pm:project-edit")
         async def pm_project_edit(request: Request, domain: str, project_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:project-edit", domain=domain, project_id=project_id))
             db = self._get_db(domain)
             project = db.get_project_by_id(project_id)
             if not project:
@@ -385,8 +357,6 @@ class PMDBUIRouter:
             description: str = Form(""),
             parent_id: str = Form("")
         ) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             db = self._get_db(domain)
 
             project = db.get_project_by_id(project_id)
@@ -430,8 +400,6 @@ class PMDBUIRouter:
 
         @router.get("/{domain}/project/{project_id}/edit-modal", response_class=HTMLResponse, name="pm:project-edit-modal")
         async def pm_project_edit_modal(request: Request, domain: str, project_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             db = self._get_db(domain)
             project = db.get_project_by_id(project_id)
             if not project:
@@ -457,8 +425,6 @@ class PMDBUIRouter:
             description: str = Form(""),
             parent_id: str = Form("")
         ) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             db = self._get_db(domain)
 
             project = db.get_project_by_id(project_id)
@@ -487,9 +453,6 @@ class PMDBUIRouter:
 
         @router.get("/{domain}/project/{project_id}/delete", response_class=HTMLResponse, name="pm:project-delete")
         async def pm_project_delete(request: Request, domain: str, project_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:project-delete", domain=domain, project_id=project_id))
             db = self._get_db(domain)
             project = db.get_project_by_id(project_id)
             if not project:
@@ -523,8 +486,6 @@ class PMDBUIRouter:
 
         @router.post("/{domain}/project/{project_id}/delete", response_class=HTMLResponse, name="pm:project-delete-submit")
         async def pm_project_delete_submit(request: Request, domain: str, project_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
 
@@ -558,9 +519,6 @@ class PMDBUIRouter:
 
         @router.get("/{domain}/project/{project_id}/phase/new", response_class=HTMLResponse, name="pm:phase-create")
         async def pm_phase_create(request: Request, domain: str, project_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:phase-create", domain=domain, project_id=project_id))
             db = self._get_db(domain)
             project = db.get_project_by_id(project_id)
             if not project:
@@ -593,8 +551,6 @@ class PMDBUIRouter:
             name: str = Form(...),
             description: str = Form("")
         ) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             db = self._get_db(domain)
 
             project = db.get_project_by_id(project_id)
@@ -627,9 +583,6 @@ class PMDBUIRouter:
 
         @router.get("/{domain}/phase/{phase_id}/edit", response_class=HTMLResponse, name="pm:phase-edit")
         async def pm_phase_edit(request: Request, domain: str, phase_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:phase-edit", domain=domain, phase_id=phase_id))
             db = self._get_db(domain)
             phase = db.get_phase_by_id(phase_id)
             if not phase:
@@ -666,8 +619,6 @@ class PMDBUIRouter:
             description: str = Form(""),
             project_id: str = Form(...)
         ) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             db = self._get_db(domain)
 
             phase = db.get_phase_by_id(phase_id)
@@ -702,9 +653,6 @@ class PMDBUIRouter:
 
         @router.get("/{domain}/phase/{phase_id}/delete", response_class=HTMLResponse, name="pm:phase-delete")
         async def pm_phase_delete(request: Request, domain: str, phase_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:phase-delete", domain=domain, phase_id=phase_id))
             db = self._get_db(domain)
             phase = db.get_phase_by_id(phase_id)
             if not phase:
@@ -736,8 +684,6 @@ class PMDBUIRouter:
 
         @router.post("/{domain}/phase/{phase_id}/delete", response_class=HTMLResponse, name="pm:phase-delete-submit")
         async def pm_phase_delete_submit(request: Request, domain: str, phase_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
 
@@ -768,8 +714,6 @@ class PMDBUIRouter:
 
         @router.get("/{domain}/phase/{phase_id}/edit-modal", response_class=HTMLResponse, name="pm:phase-edit-modal")
         async def pm_phase_edit_modal(request: Request, domain: str, phase_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             db = self._get_db(domain)
             phase = db.get_phase_by_id(phase_id)
             if not phase:
@@ -795,8 +739,6 @@ class PMDBUIRouter:
             description: str = Form(""),
             project_id: str = Form(...)
         ) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             db = self._get_db(domain)
 
             phase = db.get_phase_by_id(phase_id)
@@ -832,9 +774,6 @@ class PMDBUIRouter:
 
         @router.get("/{domain}/project/{project_id}/task/new", response_class=HTMLResponse, name="pm:task-create-in-project")
         async def pm_task_create_in_project(request: Request, domain: str, project_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:task-create-in-project", domain=domain, project_id=project_id))
             db = self._get_db(domain)
             project = db.get_project_by_id(project_id)
             if not project:
@@ -872,8 +811,6 @@ class PMDBUIRouter:
             status: str = Form("ToDo"),
             description: str = Form("")
         ) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             db = self._get_db(domain)
 
             project = db.get_project_by_id(project_id)
@@ -919,9 +856,6 @@ class PMDBUIRouter:
 
         @router.get("/{domain}/phase/{phase_id}/task/new", response_class=HTMLResponse, name="pm:task-create-in-phase")
         async def pm_task_create_in_phase(request: Request, domain: str, phase_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:task-create-in-phase", domain=domain, phase_id=phase_id))
             db = self._get_db(domain)
             phase = db.get_phase_by_id(phase_id)
             if not phase:
@@ -959,8 +893,6 @@ class PMDBUIRouter:
             status: str = Form("ToDo"),
             description: str = Form("")
         ) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             db = self._get_db(domain)
 
             phase = db.get_phase_by_id(phase_id)
@@ -1007,8 +939,6 @@ class PMDBUIRouter:
         @router.get("/{domain}/project/{project_id}/phases-options", response_class=HTMLResponse, name="pm:project-phases-options")
         async def pm_project_phases_options(request: Request, domain: str, project_id: int, selected_phase_id: int | None = None) -> HTMLResponse:
             """HTMX endpoint to get phase options for a project dropdown."""
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
             project = db.get_project_by_id(project_id)
@@ -1024,9 +954,7 @@ class PMDBUIRouter:
 
         @router.get("/{domain}/task/{task_id}/edit", response_class=HTMLResponse, name="pm:task-edit")
         async def pm_task_edit(request: Request, domain: str, task_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:task-edit", domain=domain, task_id=task_id))
+
             db = self._get_db(domain)
             task = db.get_task_by_id(task_id)
             if not task:
@@ -1075,8 +1003,6 @@ class PMDBUIRouter:
             project_id: str = Form(...),
             phase_id: str = Form("")
         ) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             db = self._get_db(domain)
 
             task = db.get_task_by_id(task_id)
@@ -1140,9 +1066,6 @@ class PMDBUIRouter:
 
         @router.get("/{domain}/task/{task_id}/delete", response_class=HTMLResponse, name="pm:task-delete")
         async def pm_task_delete(request: Request, domain: str, task_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:task-delete", domain=domain, task_id=task_id))
             db = self._get_db(domain)
             task = db.get_task_by_id(task_id)
             if not task:
@@ -1174,8 +1097,6 @@ class PMDBUIRouter:
 
         @router.post("/{domain}/task/{task_id}/delete", response_class=HTMLResponse, name="pm:task-delete-submit")
         async def pm_task_delete_submit(request: Request, domain: str, task_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
 
@@ -1215,10 +1136,6 @@ class PMDBUIRouter:
 
         @router.get("/{domain}/project/{project_id}", response_class=HTMLResponse, name="pm:project")
         async def pm_project_detail(request: Request, domain: str, project_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:phase-tasks", domain=domain,
-                                                            project_id=project_id))
             db = self._get_db(domain)
             project = db.get_project_by_id(project_id)
             if not project:
@@ -1337,10 +1254,6 @@ class PMDBUIRouter:
             
         @router.get("/{domain}/phase/{phase_id}", response_class=HTMLResponse, name="pm:phase")
         async def pm_phase(request: Request, domain: str, phase_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:phase-tasks", domain=domain,
-                                                            phase_id=phase_id))
             db = self._get_db(domain)
             phase = db.get_phase_by_id(phase_id)
             if not phase:
@@ -1367,10 +1280,6 @@ class PMDBUIRouter:
 
         @router.get("/{domain}/task/{task_id}", response_class=HTMLResponse, name="pm:task-detail")
         async def pm_task(request: Request, domain: str, task_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:task-detail", domain=domain,
-                                                            task_id=task_id))
             db = self._get_db(domain)
             task = db.get_task_by_id(task_id)
             if not task:
@@ -1425,9 +1334,6 @@ class PMDBUIRouter:
         async def pm_kanban_board(request: Request, domain: str,
                                    project_id: int | None = None,
                                    phase_id: int | None = None) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:kanban-board", domain=domain))
 
             db = self._get_db(domain)
             projects = db.get_projects()
@@ -1465,8 +1371,6 @@ class PMDBUIRouter:
         async def pm_kanban_columns(request: Request, domain: str,
                                      project_id: int | None = None,
                                      phase_id: int | None = None) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
 
@@ -1513,8 +1417,6 @@ class PMDBUIRouter:
         @router.get("/{domain}/board/phase-options", response_class=HTMLResponse, name="pm:kanban-phase-options")
         async def pm_kanban_phase_options(request: Request, domain: str, project_id: int) -> HTMLResponse:
             """HTMX endpoint to get phase options for the kanban filter dropdown."""
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
             project = db.get_project_by_id(project_id)
@@ -1535,8 +1437,6 @@ class PMDBUIRouter:
         async def pm_kanban_move_task(request: Request, domain: str,
                                        task_id: int = Form(...),
                                        new_status: str = Form(...)) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             db = self._get_db(domain)
             task = db.get_task_by_id(task_id)
 
@@ -1585,8 +1485,6 @@ class PMDBUIRouter:
 
         @router.get("/{domain}/task/{task_id}/edit-modal", response_class=HTMLResponse, name="pm:task-edit-modal")
         async def pm_task_edit_modal(request: Request, domain: str, task_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             db = self._get_db(domain)
             task = db.get_task_by_id(task_id)
             if not task:
@@ -1623,8 +1521,6 @@ class PMDBUIRouter:
             project_id: str = Form(...),
             phase_id: str = Form("")
         ) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             db = self._get_db(domain)
 
             task = db.get_task_by_id(task_id)
@@ -1682,8 +1578,6 @@ class PMDBUIRouter:
 
         @router.post("/{domain}/task/{task_id}/delete-board", response_class=HTMLResponse, name="pm:task-delete-board")
         async def pm_task_delete_board(request: Request, domain: str, task_id: int) -> Response:
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
             self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)
 
@@ -1722,9 +1616,6 @@ class PMDBUIRouter:
         async def pm_domain(request: Request, domain: str) -> Response:
             if domain in ('favicon.ico', 'robots.txt'):
                 raise HTTPException(status_code=404)
-            if domain == 'default':
-                domain = self.dpm_manager.get_default_domain()
-                return RedirectResponse(url=request.url_for("pm:domain", domain=domain))
             try:
                 self.dpm_manager.set_last_domain(domain)
             except Exception as e:
