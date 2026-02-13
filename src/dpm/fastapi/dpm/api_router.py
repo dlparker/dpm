@@ -121,29 +121,101 @@ class PMDBAPIService:
 
     def become_router(self) -> APIRouter:
         """Return a router with all routes bound to this instance."""
-        self._router.add_api_route("/domains", self.list_domains, methods=["GET"], response_model=list[DomainResponse])
-        self._router.add_api_route("/{domain}/projects", self.list_projects, methods=["GET"], response_model=list[ProjectResponse])
-        self._router.add_api_route("/{domain}/projects/{project_id}", self.get_project, methods=["GET"], response_model=ProjectResponse)
-        self._router.add_api_route("/{domain}/projects", self.create_project, methods=["POST"], response_model=ProjectResponse, status_code=201)
-        self._router.add_api_route("/{domain}/projects/{project_id}", self.update_project, methods=["PUT"], response_model=ProjectResponse)
-        self._router.add_api_route("/{domain}/projects/{project_id}", self.delete_project, methods=["DELETE"], status_code=204)
-        self._router.add_api_route("/{domain}/projects/{project_id}/phases", self.list_project_phases, methods=["GET"], response_model=list[PhaseResponse])
-        self._router.add_api_route("/{domain}/projects/{project_id}/tasks", self.list_project_tasks, methods=["GET"], response_model=list[TaskResponse])
-        self._router.add_api_route("/{domain}/phases", self.list_phases, methods=["GET"], response_model=list[PhaseResponse])
-        self._router.add_api_route("/{domain}/phases/{phase_id}", self.get_phase, methods=["GET"], response_model=PhaseResponse)
-        self._router.add_api_route("/{domain}/phases", self.create_phase, methods=["POST"], response_model=PhaseResponse, status_code=201)
-        self._router.add_api_route("/{domain}/phases/{phase_id}", self.update_phase, methods=["PUT"], response_model=PhaseResponse)
-        self._router.add_api_route("/{domain}/phases/{phase_id}", self.delete_phase, methods=["DELETE"], status_code=204)
-        self._router.add_api_route("/{domain}/phases/{phase_id}/tasks", self.list_phase_tasks, methods=["GET"], response_model=list[TaskResponse])
-        self._router.add_api_route("/{domain}/tasks", self.list_tasks, methods=["GET"], response_model=list[TaskResponse])
-        self._router.add_api_route("/{domain}/tasks/{task_id}", self.get_task, methods=["GET"], response_model=TaskResponse)
-        self._router.add_api_route("/{domain}/tasks", self.create_task, methods=["POST"], response_model=TaskResponse, status_code=201)
-        self._router.add_api_route("/{domain}/tasks/{task_id}", self.update_task, methods=["PUT"], response_model=TaskResponse)
-        self._router.add_api_route("/{domain}/tasks/{task_id}", self.delete_task, methods=["DELETE"], status_code=204)
-        self._router.add_api_route("/{domain}/tasks/{task_id}/blockers", self.list_task_blockers, methods=["GET"], response_model=list[BlockerResponse])
-        self._router.add_api_route("/{domain}/tasks/{task_id}/blockers", self.add_blocker, methods=["POST"], status_code=201)
-        self._router.add_api_route("/{domain}/tasks/{task_id}/blockers/{blocker_id}", self.remove_blocker, methods=["DELETE"], status_code=204)
-        self._router.add_api_route("/{domain}/tasks/{task_id}/blocks", self.list_tasks_blocked_by, methods=["GET"], response_model=list[BlockerResponse])
+        self._router.add_api_route("/domains",
+                                   self.list_domains,
+                                   methods=["GET"],
+                                   response_model=list[DomainResponse])
+        self._router.add_api_route("/{domain}/projects",
+                                   self.list_projects,
+                                   methods=["GET"],
+                                   response_model=list[ProjectResponse])
+        self._router.add_api_route("/{domain}/projects/{project_id}",
+                                   self.get_project,
+                                   methods=["GET"],
+                                   response_model=ProjectResponse)
+        self._router.add_api_route("/{domain}/projects",
+                                   self.create_project,
+                                   methods=["POST"],
+                                   response_model=ProjectResponse,
+                                   status_code=201)
+        self._router.add_api_route("/{domain}/projects/{project_id}",
+                                   self.update_project,
+                                   methods=["PUT"],
+                                   response_model=ProjectResponse)
+        self._router.add_api_route("/{domain}/projects/{project_id}",
+                                   self.delete_project,
+                                   methods=["DELETE"],
+                                   status_code=204)
+        self._router.add_api_route("/{domain}/projects/{project_id}/phases",
+                                   self.list_project_phases,
+                                   methods=["GET"],
+                                   response_model=list[PhaseResponse])
+        self._router.add_api_route("/{domain}/projects/{project_id}/tasks",
+                                   self.list_project_tasks,
+                                   methods=["GET"],
+                                   response_model=list[TaskResponse])
+        self._router.add_api_route("/{domain}/phases",
+                                   self.list_phases,
+                                   methods=["GET"],
+                                   response_model=list[PhaseResponse])
+        self._router.add_api_route("/{domain}/phases/{phase_id}",
+                                   self.get_phase,
+                                   methods=["GET"],
+                                   response_model=PhaseResponse)
+        self._router.add_api_route("/{domain}/phases",
+                                   self.create_phase,
+                                   methods=["POST"],
+                                   response_model=PhaseResponse,
+                                   status_code=201)
+        self._router.add_api_route("/{domain}/phases/{phase_id}",
+                                   self.update_phase,
+                                   methods=["PUT"],
+                                   response_model=PhaseResponse)
+        self._router.add_api_route("/{domain}/phases/{phase_id}",
+                                   self.delete_phase,
+                                   methods=["DELETE"],
+                                   status_code=204)
+        self._router.add_api_route("/{domain}/phases/{phase_id}/tasks",
+                                   self.list_phase_tasks,
+                                   methods=["GET"],
+                                   response_model=list[TaskResponse])
+        self._router.add_api_route("/{domain}/tasks",
+                                   self.list_tasks,
+                                   methods=["GET"],
+                                   response_model=list[TaskResponse])
+        self._router.add_api_route("/{domain}/tasks/{task_id}",
+                                   self.get_task,
+                                   methods=["GET"],
+                                   response_model=TaskResponse)
+        self._router.add_api_route("/{domain}/tasks",
+                                   self.create_task,
+                                   methods=["POST"],
+                                   response_model=TaskResponse,
+                                   status_code=201)
+        self._router.add_api_route("/{domain}/tasks/{task_id}",
+                                   self.update_task,
+                                   methods=["PUT"],
+                                   response_model=TaskResponse)
+        self._router.add_api_route("/{domain}/tasks/{task_id}",
+                                   self.delete_task,
+                                   methods=["DELETE"],
+                                   status_code=204)
+        self._router.add_api_route("/{domain}/tasks/{task_id}/blockers",
+                                   self.list_task_blockers,
+                                   methods=["GET"],
+                                   response_model=list[BlockerResponse])
+        self._router.add_api_route("/{domain}/tasks/{task_id}/blockers",
+                                   self.add_blocker,
+                                   methods=["POST"],
+                                   status_code=201)
+        self._router.add_api_route("/{domain}/tasks/{task_id}/blockers/{blocker_id}",
+                                   self.remove_blocker,
+                                   methods=["DELETE"],
+                                   status_code=204)
+        self._router.add_api_route("/{domain}/tasks/{task_id}/blocks",
+                                   self.list_tasks_blocked_by,
+                                   methods=["GET"],
+                                   response_model=list[BlockerResponse])
         return self._router
 
     def _get_db(self, domain: str) -> ModelDB:
@@ -221,7 +293,6 @@ class PMDBAPIService:
             project.description = data.description
         if data.parent_id is not None:
             project.parent_id = data.parent_id
-
         try:
             project.save()
             return ProjectResponse(

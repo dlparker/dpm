@@ -450,7 +450,6 @@ def test_phases_links_1(create_db):
     assert proj_2.get_phases()[1] == phase_8
     assert proj_2.get_phases()[-1] == phase_7
 
-
 def test_phase_tasks(create_db):
     model_db, db_dir, target_db_name = create_db
 

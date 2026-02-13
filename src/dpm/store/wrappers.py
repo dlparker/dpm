@@ -6,6 +6,7 @@ import json
 import logging
 from enum import StrEnum, auto
 
+from sqlalchemy import event
 from sqlmodel import SQLModel, Field, Session, create_engine, select, Relationship
 from dpm.store.models import Blocker, Project, Phase, Task
 
@@ -133,20 +134,9 @@ class ProjectRecord:
             self.model_db.replace_task_project_refs(self.project_id, new_project.project_id)
         else:
             for phase in phases:
-                phase.change_project(new_project.project_id)
+                phase.change_project(new_project.project_id) # type: ignore
         self.model_db.delete_project_record(self)
         self._project.id = None
-
-    def to_json_dict(self):
-        d = dict(
-            project_id=self.project_id,
-            name=self.name,
-            description=self.description,
-            parent_id=self.parent_id,
-            save_time=self.save_time,
-            model_db=self.model_db,
-        )
-        return FilterWrapper(d)
 
 
 class PhaseRecord:
@@ -442,6 +432,13 @@ class ModelDB:
             
     def open(self) -> None:
         self.engine = create_engine(f"sqlite:///{self.filepath}", echo=False)
+
+        @event.listens_for(self.engine, "connect")
+        def set_sqlite_pragma(dbapi_conn, connection_record):
+            cursor = dbapi_conn.cursor()
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.close()
+
         SQLModel.metadata.create_all(self.engine)
         log.debug("created sqlmodel store for model_db")
 
