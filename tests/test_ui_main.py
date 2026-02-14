@@ -17,6 +17,15 @@ from dpm.fastapi.server import DPMServer
 from dpm.store.models import Task, Project, Phase, Task
 from dpm.store.wrappers import ModelDB
 
+HTMX_HEADERS = {"HX-Request": "true"}
+
+
+def assert_is_fragment(response):
+    """Verify an HTMX response is a fragment (not a full HTML page)."""
+    assert response.status_code == 200
+    assert "<!DOCTYPE" not in response.text
+
+
 @pytest.fixture
 def full_app_create(tmp_path):
     # Create domain1 with test data
@@ -88,11 +97,21 @@ def test_project_create_read_delete(full_app_create):
     assert "top_project" in list_response.text
     assert "child_project" in list_response.text
 
+    # HTMX: project list returns fragment
+    htmx_list = client.get(list_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_list)
+    assert "top_project" in htmx_list.text
+
     # --- Read: project detail page ---
     detail_url = f"/{domain_name}/project/{proj_1.project_id}"
     detail_response = client.get(detail_url)
     assert detail_response.status_code == 200
     assert "top_project" in detail_response.text
+
+    # HTMX: project detail returns fragment
+    htmx_detail = client.get(detail_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_detail)
+    assert "top_project" in htmx_detail.text
 
     # --- Read: project children page (shows phases and direct tasks, not sub-projects) ---
     children_url = f"/{domain_name}/project/{proj_1.project_id}/children"
@@ -101,15 +120,28 @@ def test_project_create_read_delete(full_app_create):
     # top_project has no phases or tasks yet, so expect the empty message
     assert "No phases or tasks" in children_response.text
 
+    # HTMX: project children returns fragment
+    htmx_children = client.get(children_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_children)
+
     # --- Read: create form (GET) renders ---
     create_form_response = client.get(project_create_url)
     assert create_form_response.status_code == 200
+
+    # HTMX: create form returns fragment
+    htmx_create = client.get(project_create_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_create)
 
     # --- Delete: confirmation page ---
     delete_confirm_url = f"/{domain_name}/project/{proj_1.project_id}/delete"
     delete_confirm_response = client.get(delete_confirm_url)
     assert delete_confirm_response.status_code == 200
     assert "top_project" in delete_confirm_response.text
+
+    # HTMX: delete confirmation returns fragment
+    htmx_delete = client.get(delete_confirm_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_delete)
+    assert "top_project" in htmx_delete.text
 
     # --- Delete: submit ---
     delete_response = client.post(delete_confirm_url)
@@ -156,26 +188,49 @@ def test_phase_create_read_delete(full_app_create):
     assert detail_response.status_code == 200
     assert "test_phase" in detail_response.text
 
+    # HTMX: phase detail returns fragment
+    htmx_detail = client.get(detail_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_detail)
+    assert "test_phase" in htmx_detail.text
+
     # --- Read: project children page shows the phase ---
     children_url = f"/{domain_name}/project/{project.project_id}/children"
     children_response = client.get(children_url)
     assert children_response.status_code == 200
     assert "test_phase" in children_response.text
 
+    # HTMX: project children returns fragment
+    htmx_children = client.get(children_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_children)
+    assert "test_phase" in htmx_children.text
+
     # --- Read: phase tasks page (empty) ---
     tasks_url = f"/{domain_name}/phase/{phase.phase_id}/tasks"
     tasks_response = client.get(tasks_url)
     assert tasks_response.status_code == 200
 
+    # HTMX: phase tasks returns fragment
+    htmx_tasks = client.get(tasks_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_tasks)
+
     # --- Read: create form (GET) renders ---
     create_form_response = client.get(phase_create_url)
     assert create_form_response.status_code == 200
+
+    # HTMX: create form returns fragment
+    htmx_create = client.get(phase_create_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_create)
 
     # --- Delete: confirmation page ---
     delete_confirm_url = f"/{domain_name}/phase/{phase.phase_id}/delete"
     delete_confirm_response = client.get(delete_confirm_url)
     assert delete_confirm_response.status_code == 200
     assert "test_phase" in delete_confirm_response.text
+
+    # HTMX: delete confirmation returns fragment
+    htmx_delete = client.get(delete_confirm_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_delete)
+    assert "test_phase" in htmx_delete.text
 
     # --- Delete: submit ---
     delete_response = client.post(delete_confirm_url)
@@ -225,15 +280,29 @@ def test_task_create_read_delete_in_project(full_app_create):
     assert detail_response.status_code == 200
     assert "proj_task" in detail_response.text
 
+    # HTMX: task detail returns fragment
+    htmx_detail = client.get(detail_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_detail)
+    assert "proj_task" in htmx_detail.text
+
     # --- Read: create form (GET) renders ---
     create_form_response = client.get(task_create_url)
     assert create_form_response.status_code == 200
+
+    # HTMX: task create form returns fragment
+    htmx_create = client.get(task_create_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_create)
 
     # --- Delete: confirmation page ---
     delete_confirm_url = f"/{domain_name}/task/{task.task_id}/delete"
     delete_confirm_response = client.get(delete_confirm_url)
     assert delete_confirm_response.status_code == 200
     assert "proj_task" in delete_confirm_response.text
+
+    # HTMX: delete confirmation returns fragment
+    htmx_delete = client.get(delete_confirm_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_delete)
+    assert "proj_task" in htmx_delete.text
 
     # --- Delete: submit ---
     delete_response = client.post(delete_confirm_url)
@@ -283,11 +352,21 @@ def test_task_create_read_delete_in_phase(full_app_create):
     assert tasks_response.status_code == 200
     assert "phase_task" in tasks_response.text
 
+    # HTMX: phase tasks returns fragment with task
+    htmx_tasks = client.get(tasks_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_tasks)
+    assert "phase_task" in htmx_tasks.text
+
     # --- Read: task detail page ---
     detail_url = f"/{domain_name}/task/{task.task_id}"
     detail_response = client.get(detail_url)
     assert detail_response.status_code == 200
     assert "phase_task" in detail_response.text
+
+    # HTMX: task detail returns fragment
+    htmx_detail = client.get(detail_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_detail)
+    assert "phase_task" in htmx_detail.text
 
     # --- Delete: submit ---
     delete_url = f"/{domain_name}/task/{task.task_id}/delete"
@@ -319,6 +398,11 @@ def test_project_edit_page(full_app_create):
     edit_response = client.get(edit_url)
     assert edit_response.status_code == 200
     assert "edit_proj" in edit_response.text
+
+    # HTMX: project edit returns fragment
+    htmx_edit = client.get(edit_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_edit)
+    assert "edit_proj" in htmx_edit.text
 
     # --- POST edit with modified name/description ---
     edit_submit_response = client.post(edit_url,
@@ -405,6 +489,11 @@ def test_phase_edit_page(full_app_create):
     edit_response = client.get(edit_url)
     assert edit_response.status_code == 200
     assert "edit_phase" in edit_response.text
+
+    # HTMX: phase edit returns fragment
+    htmx_edit = client.get(edit_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_edit)
+    assert "edit_phase" in htmx_edit.text
 
     # --- POST edit with modified fields ---
     edit_submit_response = client.post(edit_url,
@@ -515,6 +604,11 @@ def test_task_edit_page(full_app_create):
     edit_response = client.get(edit_url)
     assert edit_response.status_code == 200
     assert "edit_task_1" in edit_response.text
+
+    # HTMX: task edit returns fragment
+    htmx_edit = client.get(edit_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_edit)
+    assert "edit_task_1" in htmx_edit.text
 
     # --- POST edit changing name, status, description ---
     edit_submit_response = client.post(edit_url,
