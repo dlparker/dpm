@@ -5,9 +5,11 @@ import argparse
 import uvicorn
 import json
 from dpm.fastapi.server import DPMServer
+from dpm.top_error import TopErrorHandler
 
+logger = logging.getLogger("dpm fastapi server")
 
-async def main():
+def main():
     parser = argparse.ArgumentParser(
         description="DPM Server",
     )
@@ -28,9 +30,18 @@ async def main():
         log_level=logging.INFO
     )
     
-    server = uvicorn.Server(config)
-    await server.serve()
+    u_server = uvicorn.Server(config)
+
+    handler = TopErrorHandler(top_level_callback=server.get_error_callback(), logger=logger)
+
+    async def main_coroutine(u_server):
+        await u_server.serve()
+    handler.run(main_coroutine, u_server)
     
+    if server.background_error_dict:
+        from pprint import pprint
+        pprint(server.background_error_dict)
+        raise SystemExit(1)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

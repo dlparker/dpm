@@ -523,3 +523,36 @@ def test_phases_options_bad_project(full_app_create):
     resp = client.get(f"/{domain}/project/9999/phases-options")
     assert resp.status_code == 200
     assert "None (directly under project)" in resp.text
+
+
+# ====================================================================
+# Error path coverage — force exceptions via DB-level manipulation
+# ====================================================================
+
+def test_edit_modal_save_error(full_app_create):
+    """POST edit-modal returns error when save fails due to name conflict."""
+    setup = full_app_create
+    db: ModelDB = setup['db']
+    domain = setup['domain_name']
+    client = TestClient(setup['app'])
+
+    _create_project(client, domain, "ed_err_proj")
+    project = db.get_project_by_name("ed_err_proj")
+    _create_phase(client, domain, project.project_id, "ed_err_phase")
+    phase = db.get_phase_by_name("ed_err_phase")
+    _create_task(client, domain, phase.phase_id, "ed_task_a")
+    _create_task(client, domain, phase.phase_id, "ed_task_b")
+    task_a = db.get_task_by_name("ed_task_a")
+
+    # Submit edit-modal with task_a's name changed to "ed_task_b" — dup name
+    resp = client.post(
+        f"/{domain}/task/{task_a.task_id}/edit-modal",
+        data={
+            'name': 'ed_task_b',
+            'status': 'ToDo',
+            'description': '',
+            'project_id': str(project.project_id),
+            'phase_id': str(phase.phase_id),
+        })
+    assert resp.status_code == 200
+    assert "Failed to update task" in resp.text

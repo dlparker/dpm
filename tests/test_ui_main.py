@@ -716,3 +716,244 @@ def test_task_edit_modal(full_app_create):
     blockers = updated.get_blockers(only_not_done=False)
     assert len(blockers) == 1
     assert blockers[0].task_id == task_2.task_id
+
+
+# ====================================================================
+# Stage 7: CRUD UI Exception Paths
+# ====================================================================
+
+def test_ui_crud_exceptions(full_app_create):
+    """Test error paths in the CRUD UI router: 404s for missing entities
+    and user-input errors (duplicate names) on create/update."""
+    setup_dict = full_app_create
+    db: ModelDB = setup_dict['db']
+    domain_name = setup_dict['domain_name']
+    client = TestClient(setup_dict['app'])
+
+    BAD_ID = 999
+
+    # --- Project 404s ---
+
+    # Edit GET/POST with nonexistent project
+    assert client.get(f"/{domain_name}/project/{BAD_ID}/edit").status_code == 404
+    assert client.post(f"/{domain_name}/project/{BAD_ID}/edit",
+                       data={'name': 'x', 'description': '', 'parent_id': ''}).status_code == 404
+
+    # Edit-modal GET/POST with nonexistent project
+    assert client.get(f"/{domain_name}/project/{BAD_ID}/edit-modal").status_code == 404
+    assert client.post(f"/{domain_name}/project/{BAD_ID}/edit-modal",
+                       data={'name': 'x', 'description': '', 'parent_id': ''}).status_code == 404
+
+    # Delete GET/POST with nonexistent project
+    assert client.get(f"/{domain_name}/project/{BAD_ID}/delete").status_code == 404
+    assert client.post(f"/{domain_name}/project/{BAD_ID}/delete").status_code == 404
+
+    # --- Phase 404s ---
+
+    # Create GET/POST with nonexistent project
+    assert client.get(f"/{domain_name}/project/{BAD_ID}/phase/new").status_code == 404
+    assert client.post(f"/{domain_name}/project/{BAD_ID}/phase/new",
+                       data={'name': 'x', 'description': ''}).status_code == 404
+
+    # Edit GET/POST with nonexistent phase
+    assert client.get(f"/{domain_name}/phase/{BAD_ID}/edit").status_code == 404
+    assert client.post(f"/{domain_name}/phase/{BAD_ID}/edit",
+                       data={'name': 'x', 'description': '', 'project_id': '1'}).status_code == 404
+
+    # Edit-modal GET/POST with nonexistent phase
+    assert client.get(f"/{domain_name}/phase/{BAD_ID}/edit-modal").status_code == 404
+    assert client.post(f"/{domain_name}/phase/{BAD_ID}/edit-modal",
+                       data={'name': 'x', 'description': '', 'project_id': '1'}).status_code == 404
+
+    # Delete GET/POST with nonexistent phase
+    assert client.get(f"/{domain_name}/phase/{BAD_ID}/delete").status_code == 404
+    assert client.post(f"/{domain_name}/phase/{BAD_ID}/delete").status_code == 404
+
+    # --- Task 404s ---
+
+    # Create in project GET/POST with nonexistent project
+    assert client.get(f"/{domain_name}/project/{BAD_ID}/task/new").status_code == 404
+    assert client.post(f"/{domain_name}/project/{BAD_ID}/task/new",
+                       data={'name': 'x', 'status': 'ToDo', 'description': ''}).status_code == 404
+
+    # Create in phase GET/POST with nonexistent phase
+    assert client.get(f"/{domain_name}/phase/{BAD_ID}/task/new").status_code == 404
+    assert client.post(f"/{domain_name}/phase/{BAD_ID}/task/new",
+                       data={'name': 'x', 'status': 'ToDo', 'description': ''}).status_code == 404
+
+    # Edit GET/POST with nonexistent task
+    assert client.get(f"/{domain_name}/task/{BAD_ID}/edit").status_code == 404
+    assert client.post(f"/{domain_name}/task/{BAD_ID}/edit",
+                       data={'name': 'x', 'status': 'ToDo', 'description': '',
+                             'project_id': '1', 'phase_id': ''}).status_code == 404
+
+    # Delete GET/POST with nonexistent task
+    assert client.get(f"/{domain_name}/task/{BAD_ID}/delete").status_code == 404
+    assert client.post(f"/{domain_name}/task/{BAD_ID}/delete").status_code == 404
+
+    # --- Phase options with nonexistent project returns fallback HTML ---
+    options_response = client.get(f"/{domain_name}/project/{BAD_ID}/phases-options")
+    assert options_response.status_code == 200
+    assert "None (directly under project)" in options_response.text
+
+    # --- User-input errors: duplicate names on create/update ---
+
+    # Create two projects with the same name
+    client.post(f"/{domain_name}/project/new",
+                data={'name': 'dup_project', 'description': ''})
+    proj = db.get_project_by_name('dup_project')
+    assert proj is not None
+
+    dup_proj_response = client.post(f"/{domain_name}/project/new",
+                                    data={'name': 'dup_project', 'description': ''})
+    assert dup_proj_response.status_code == 200
+    assert "alert-error" in dup_proj_response.text
+
+    # Create a second project, then try to rename it to the first project's name
+    client.post(f"/{domain_name}/project/new",
+                data={'name': 'other_project', 'description': ''})
+    proj2 = db.get_project_by_name('other_project')
+    assert proj2 is not None
+
+    # Edit page: rename to duplicate
+    dup_edit_response = client.post(f"/{domain_name}/project/{proj2.project_id}/edit",
+                                    data={'name': 'dup_project', 'description': '',
+                                          'parent_id': ''})
+    assert dup_edit_response.status_code == 200
+    assert "alert-error" in dup_edit_response.text
+
+    # Edit-modal: rename to duplicate
+    dup_modal_response = client.post(f"/{domain_name}/project/{proj2.project_id}/edit-modal",
+                                     data={'name': 'dup_project', 'description': '',
+                                           'parent_id': ''})
+    assert dup_modal_response.status_code == 200
+    assert "Failed" in dup_modal_response.text
+
+    # --- Phase duplicate names ---
+    client.post(f"/{domain_name}/project/{proj.project_id}/phase/new",
+                data={'name': 'dup_phase', 'description': ''})
+    phase = db.get_phase_by_name('dup_phase')
+    assert phase is not None
+
+    dup_phase_response = client.post(f"/{domain_name}/project/{proj.project_id}/phase/new",
+                                     data={'name': 'dup_phase', 'description': ''})
+    assert dup_phase_response.status_code == 200
+    assert "alert-error" in dup_phase_response.text
+
+    # Create second phase, rename to duplicate via edit page
+    client.post(f"/{domain_name}/project/{proj.project_id}/phase/new",
+                data={'name': 'other_phase', 'description': ''})
+    phase2 = db.get_phase_by_name('other_phase')
+    assert phase2 is not None
+
+    dup_phase_edit = client.post(f"/{domain_name}/phase/{phase2.phase_id}/edit",
+                                 data={'name': 'dup_phase', 'description': '',
+                                       'project_id': str(proj.project_id)})
+    assert dup_phase_edit.status_code == 200
+    assert "alert-error" in dup_phase_edit.text
+
+    # Edit-modal: rename phase to duplicate
+    dup_phase_modal = client.post(f"/{domain_name}/phase/{phase2.phase_id}/edit-modal",
+                                   data={'name': 'dup_phase', 'description': '',
+                                         'project_id': str(proj.project_id)})
+    assert dup_phase_modal.status_code == 200
+    assert "Failed" in dup_phase_modal.text
+
+    # --- Task duplicate names ---
+    client.post(f"/{domain_name}/project/{proj.project_id}/task/new",
+                data={'name': 'dup_task', 'status': 'ToDo', 'description': ''})
+    task = db.get_task_by_name('dup_task')
+    assert task is not None
+
+    # Duplicate task in project
+    dup_task_proj = client.post(f"/{domain_name}/project/{proj.project_id}/task/new",
+                                data={'name': 'dup_task', 'status': 'ToDo', 'description': ''})
+    assert dup_task_proj.status_code == 200
+    assert "alert-error" in dup_task_proj.text
+
+    # Duplicate task in phase
+    dup_task_phase = client.post(f"/{domain_name}/phase/{phase.phase_id}/task/new",
+                                  data={'name': 'dup_task', 'status': 'ToDo', 'description': ''})
+    assert dup_task_phase.status_code == 200
+    assert "alert-error" in dup_task_phase.text
+
+    # Create second task, rename to duplicate via edit page
+    client.post(f"/{domain_name}/project/{proj.project_id}/task/new",
+                data={'name': 'other_task', 'status': 'ToDo', 'description': ''})
+    task2 = db.get_task_by_name('other_task')
+    assert task2 is not None
+
+    dup_task_edit = client.post(f"/{domain_name}/task/{task2.task_id}/edit",
+                                data={'name': 'dup_task', 'status': 'ToDo', 'description': '',
+                                      'project_id': str(proj.project_id), 'phase_id': ''})
+    assert dup_task_edit.status_code == 200
+    assert "alert-error" in dup_task_edit.text
+
+    # --- Phase edit-modal: move phase to different project ---
+    client.post(f"/{domain_name}/project/new",
+                data={'name': 'move_target_proj', 'description': ''})
+    move_target = db.get_project_by_name('move_target_proj')
+    assert move_target is not None
+
+    move_modal = client.post(f"/{domain_name}/phase/{phase.phase_id}/edit-modal",
+                              data={'name': 'dup_phase', 'description': '',
+                                    'project_id': str(move_target.project_id)})
+    assert move_modal.status_code == 200
+    assert "close-modal" in move_modal.headers.get("HX-Trigger", "")
+    moved_phase = db.get_phase_by_id(phase.phase_id)
+    assert moved_phase.project_id == move_target.project_id
+
+    # --- Task create in project with blockers ---
+    blocker_task_response = client.post(f"/{domain_name}/project/{proj.project_id}/task/new",
+                                        data={'name': 'blocker_task', 'status': 'ToDo',
+                                              'description': ''})
+    assert "alert-success" in blocker_task_response.text
+    blocker_t = db.get_task_by_name('blocker_task')
+    assert blocker_t is not None
+
+    blocked_proj_response = client.post(f"/{domain_name}/project/{proj.project_id}/task/new",
+                                         data={'name': 'blocked_proj_task', 'status': 'ToDo',
+                                               'description': '',
+                                               'blocker_ids': str(blocker_t.task_id)})
+    assert "alert-success" in blocked_proj_response.text
+    blocked_proj_t = db.get_task_by_name('blocked_proj_task')
+    assert blocked_proj_t is not None
+    blockers = blocked_proj_t.get_blockers(only_not_done=False)
+    assert len(blockers) == 1
+    assert blockers[0].task_id == blocker_t.task_id
+
+    # --- Task create-in-phase GET form (full page + HTMX) ---
+    task_in_phase_url = f"/{domain_name}/phase/{phase.phase_id}/task/new"
+    form_response = client.get(task_in_phase_url)
+    assert form_response.status_code == 200
+
+    htmx_form = client.get(task_in_phase_url, headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_form)
+
+    # --- Task create in phase with blockers ---
+    blocked_phase_response = client.post(task_in_phase_url,
+                                          data={'name': 'blocked_phase_task', 'status': 'ToDo',
+                                                'description': '',
+                                                'blocker_ids': str(blocker_t.task_id)})
+    assert "alert-success" in blocked_phase_response.text
+    blocked_phase_t = db.get_task_by_name('blocked_phase_task')
+    assert blocked_phase_t is not None
+    blockers = blocked_phase_t.get_blockers(only_not_done=False)
+    assert len(blockers) == 1
+    assert blockers[0].task_id == blocker_t.task_id
+
+    # --- Task edit with phase_id not matching project_id (phase cleared) ---
+    # Create a phase under a different project so the phase_id won't match
+    client.post(f"/{domain_name}/project/{move_target.project_id}/phase/new",
+                data={'name': 'wrong_proj_phase', 'description': ''})
+    wrong_phase = db.get_phase_by_name('wrong_proj_phase')
+    assert wrong_phase is not None
+
+    mismatch_edit = client.post(f"/{domain_name}/task/{task2.task_id}/edit",
+                                 data={'name': 'other_task', 'status': 'ToDo', 'description': '',
+                                       'project_id': str(proj.project_id),
+                                       'phase_id': str(wrong_phase.phase_id)})
+    assert mismatch_edit.status_code == 200
+    assert "alert-success" in mismatch_edit.text
+    updated_task2 = db.get_task_by_id(task2.task_id)
+    assert updated_task2.phase_id is None
