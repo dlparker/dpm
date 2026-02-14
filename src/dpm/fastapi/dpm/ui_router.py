@@ -629,10 +629,11 @@ class PMDBUIRouter:
             project_id_int = int(project_id)
 
             try:
-                phase.name = name
-                phase.description = description if description else None
                 if phase.project_id != project_id_int:
                     db.move_phase_and_tasks_to_project(phase.phase_id, project_id_int)
+                    phase.project_id = project_id_int
+                phase.name = name
+                phase.description = description if description else None
                 phase.save()
 
                 context = {
@@ -749,10 +750,11 @@ class PMDBUIRouter:
             project_id_int = int(project_id)
 
             try:
-                phase.name = name
-                phase.description = description if description else None
                 if phase.project_id != project_id_int:
                     db.move_phase_and_tasks_to_project(phase.phase_id, project_id_int)
+                    phase.project_id = project_id_int
+                phase.name = name
+                phase.description = description if description else None
                 phase.save()
 
                 # Return empty response with trigger to close modal
