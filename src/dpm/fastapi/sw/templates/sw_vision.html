@@ -1,0 +1,63 @@
+{% extends "pm_sb_base.html" %}
+
+{% block title %}Vision - {{ vision.name }}{% endblock %}
+
+{% block sb_main_content %}
+<main class="flex-1 p-6">
+    <div class="flex items-center gap-4 mb-4">
+        <a href="{{ url_for('sw:domain', domain=domain) }}" class="inline-flex items-center gap-2 link link-hover">
+            <span class="badge badge-neutral badge-sm">Domain</span>
+            {{ domain }}
+        </a>
+    </div>
+
+    <div class="flex items-center gap-2 mb-6">
+        <span class="badge badge-primary">Vision</span>
+        <h1 class="text-2xl font-bold">{{ vision.name }}</h1>
+    </div>
+
+    {% if vision.description %}
+    <div class="mb-6">
+        <h2 class="text-sm font-medium text-base-content/60 mb-1">Description</h2>
+        <p class="text-base-content">{{ vision.description }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Subsystems -->
+    <div class="mb-6">
+        <h2 class="text-sm font-medium text-base-content/60 mb-2">Subsystems</h2>
+        {% if subsystems %}
+        <ul class="space-y-1">
+            {% for sub in subsystems %}
+            <li class="flex items-center gap-2 p-2 rounded-lg bg-base-200">
+                <span class="badge badge-secondary badge-sm">Subsystem</span>
+                <a href="{{ url_for('sw:subsystem', domain=domain, subsystem_id=sub.subsystem_id) }}"
+                   class="link link-hover font-medium">{{ sub.name }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-base-content/50 italic text-sm">No subsystems</p>
+        {% endif %}
+    </div>
+
+    <!-- Direct Epics -->
+    <div class="mb-6">
+        <h2 class="text-sm font-medium text-base-content/60 mb-2">Epics</h2>
+        {% if epics %}
+        <ul class="space-y-1">
+            {% for epic in epics %}
+            <li class="flex items-center gap-2 p-2 rounded-lg bg-base-200">
+                <span class="badge badge-info badge-sm">Epic</span>
+                <a href="{{ url_for('sw:epic', domain=domain, epic_id=epic.epic_id) }}"
+                   class="link link-hover font-medium">{{ epic.name }}</a>
+                {% include "sw_guardrail_badge.html" %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-base-content/50 italic text-sm">No epics</p>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}

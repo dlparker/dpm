@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from dpm.fastapi.ops import ServerOps
 from dpm.store.wrappers import ModelDB
-from dpm.store.domains import DPMManager
+from dpm.store.domains import DomainMode, DPMManager
 
 logger = logging.getLogger("UIRouter")
 
@@ -414,6 +414,12 @@ class PMDBUIRouter:
             domain_info = all_domains.get(domain)
             if not domain_info:
                 raise HTTPException(status_code=404, detail=f"Domain '{domain}' not found")
+
+            if domain_info.domain_mode == DomainMode.SOFTWARE:
+                return RedirectResponse(
+                    url=request.url_for("sw:domain", domain=domain),
+                    status_code=307
+                )
 
             self.dpm_manager.set_last_domain(domain)
             db = self._get_db(domain)

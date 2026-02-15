@@ -1,0 +1,52 @@
+{% extends "pm_sb_base.html" %}
+
+{% block title %}SW Domain - {{ domain }}{% endblock %}
+
+{% block sb_main_content %}
+<main class="flex-1 p-6">
+    <div class="flex items-center gap-2 mb-6">
+        <span class="badge badge-neutral">Software Domain</span>
+        <h1 class="text-2xl font-bold">{{ domain }}</h1>
+    </div>
+
+    <!-- Visions -->
+    <div class="mb-6">
+        <h2 class="text-sm font-medium text-base-content/60 mb-2">Visions</h2>
+        {% if visions %}
+        <ul class="space-y-1">
+            {% for vision in visions %}
+            <li class="flex items-center gap-2 p-2 rounded-lg bg-base-200">
+                <span class="badge badge-primary badge-sm">Vision</span>
+                <a href="{{ url_for('sw:vision', domain=domain, vision_id=vision.vision_id) }}"
+                   class="link link-hover font-medium">{{ vision.name }}</a>
+                {% if vision.description %}
+                <span class="text-base-content/50 text-sm truncate max-w-xs">- {{ vision.description }}</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-base-content/50 italic text-sm">No visions</p>
+        {% endif %}
+    </div>
+
+    <!-- Orphan Epics -->
+    <div class="mb-6">
+        <h2 class="text-sm font-medium text-base-content/60 mb-2">Standalone Epics</h2>
+        {% if orphan_epics %}
+        <ul class="space-y-1">
+            {% for epic in orphan_epics %}
+            <li class="flex items-center gap-2 p-2 rounded-lg bg-base-200">
+                <span class="badge badge-info badge-sm">Epic</span>
+                <a href="{{ url_for('sw:epic', domain=domain, epic_id=epic.epic_id) }}"
+                   class="link link-hover font-medium">{{ epic.name }}</a>
+                {% include "sw_guardrail_badge.html" %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-base-content/50 italic text-sm">No standalone epics</p>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% set gt = (epic.guardrail_type if epic is defined else (story.guardrail_type if story is defined else task.guardrail_type)) %}
+{% if gt.value == 'production' %}
+<span class="badge badge-success badge-xs">production</span>
+{% elif gt.value == 'mvp' %}
+<span class="badge badge-info badge-xs">mvp</span>
+{% elif gt.value == 'prototype' %}
+<span class="badge badge-warning badge-xs">prototype</span>
+{% elif gt.value == 'poc' %}
+<span class="badge badge-accent badge-xs">poc</span>
+{% elif gt.value == 'study' %}
+<span class="badge badge-secondary badge-xs">study</span>
+{% elif gt.value == 'research' %}
+<span class="badge badge-error badge-xs">research</span>
+{% endif %}

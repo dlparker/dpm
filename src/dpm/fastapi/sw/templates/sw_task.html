@@ -1,0 +1,99 @@
+{% extends "pm_sb_base.html" %}
+
+{% block title %}Task - {{ task.name }}{% endblock %}
+
+{% block sb_main_content %}
+<main class="flex-1 p-6">
+    <div class="flex items-center gap-4 mb-4">
+        <a href="{{ url_for('sw:domain', domain=domain) }}" class="inline-flex items-center gap-2 link link-hover">
+            <span class="badge badge-neutral badge-sm">Domain</span>
+            {{ domain }}
+        </a>
+    </div>
+
+    <div class="flex items-center gap-2 mb-6">
+        <span class="badge badge-ghost">Task</span>
+        <h1 class="text-2xl font-bold">{{ task.name }}</h1>
+        {% if task.status == 'Done' %}
+        <span class="badge badge-success">Done</span>
+        {% elif task.status == 'InProgress' %}
+        <span class="badge badge-warning">In Progress</span>
+        {% elif task.status == 'Blocked' %}
+        <span class="badge badge-error">Blocked</span>
+        {% else %}
+        <span class="badge badge-ghost">{{ task.status }}</span>
+        {% endif %}
+        {% set gt = task.guardrail_type %}
+        {% if gt.value == 'production' %}
+        <span class="badge badge-success badge-xs">production</span>
+        {% elif gt.value == 'mvp' %}
+        <span class="badge badge-info badge-xs">mvp</span>
+        {% elif gt.value == 'prototype' %}
+        <span class="badge badge-warning badge-xs">prototype</span>
+        {% elif gt.value == 'poc' %}
+        <span class="badge badge-accent badge-xs">poc</span>
+        {% elif gt.value == 'study' %}
+        <span class="badge badge-secondary badge-xs">study</span>
+        {% elif gt.value == 'research' %}
+        <span class="badge badge-error badge-xs">research</span>
+        {% endif %}
+    </div>
+
+    {% if task.description %}
+    <div class="mb-6">
+        <h2 class="text-sm font-medium text-base-content/60 mb-1">Description</h2>
+        <p class="text-base-content">{{ task.description }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Blocked by section -->
+    <div class="mb-6">
+        <h2 class="text-sm font-medium text-base-content/60 mb-2">Blocked By</h2>
+        {% if blockers %}
+        <ul class="space-y-1">
+            {% for blocker in blockers %}
+            <li class="flex items-center gap-2 p-2 rounded-lg bg-base-200">
+                {% if blocker.status == 'Done' %}
+                <span class="badge badge-success badge-sm">Done</span>
+                {% elif blocker.status == 'InProgress' %}
+                <span class="badge badge-warning badge-sm">In Progress</span>
+                {% else %}
+                <span class="badge badge-ghost badge-sm">{{ blocker.status }}</span>
+                {% endif %}
+                <span>{{ blocker.name }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-base-content/50 italic text-sm">No blocking tasks</p>
+        {% endif %}
+    </div>
+
+    <!-- Blocks section -->
+    <div class="mb-6">
+        <h2 class="text-sm font-medium text-base-content/60 mb-2">Blocks</h2>
+        {% if blocks %}
+        <ul class="space-y-1">
+            {% for blocked in blocks %}
+            <li class="flex items-center gap-2 p-2 rounded-lg bg-base-200">
+                {% if blocked.status == 'Done' %}
+                <span class="badge badge-success badge-sm">Done</span>
+                {% elif blocked.status == 'InProgress' %}
+                <span class="badge badge-warning badge-sm">In Progress</span>
+                {% else %}
+                <span class="badge badge-ghost badge-sm">{{ blocked.status }}</span>
+                {% endif %}
+                <span>{{ blocked.name }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-base-content/50 italic text-sm">Does not block any tasks</p>
+        {% endif %}
+    </div>
+
+    <div class="text-sm text-base-content/50">
+        Task ID: {{ task.task_id }} | SWTask ID: {{ task.swtask_id }}
+    </div>
+</main>
+{% endblock %}

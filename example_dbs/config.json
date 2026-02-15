@@ -7,6 +7,11 @@
         "commander": {
             "path": "./cmdr_proj.db",
             "description": "Commander tool for assistant"
+        },
+        "dpm": {
+            "path": "./dpm_proj.db",
+            "description": "DPM component of assistant",
+            "domain_mode": "software"
         }
     }
 }

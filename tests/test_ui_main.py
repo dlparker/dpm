@@ -889,6 +889,33 @@ def test_ui_crud_exceptions(full_app_create):
     assert dup_task_edit.status_code == 200
     assert "alert-error" in dup_task_edit.text
 
+    # --- UI Router 404s for nav tree and detail routes ---
+
+    # Nav tree: project children with bad project id
+    assert client.get(f"/nav/{domain_name}/project/{BAD_ID}/children").status_code == 404
+
+    # Nav tree: phase tasks with bad phase id
+    assert client.get(f"/nav/{domain_name}/phase/{BAD_ID}/tasks").status_code == 404
+
+    # Main content: project children with bad project id
+    assert client.get(f"/{domain_name}/project/{BAD_ID}/children").status_code == 404
+
+    # Main content: phase tasks with bad phase id
+    assert client.get(f"/{domain_name}/phase/{BAD_ID}/tasks").status_code == 404
+
+    # Detail: project with bad id
+    assert client.get(f"/{domain_name}/project/{BAD_ID}").status_code == 404
+
+    # Detail: phase with bad id
+    assert client.get(f"/{domain_name}/phase/{BAD_ID}").status_code == 404
+
+    # Detail: task with bad id
+    assert client.get(f"/{domain_name}/task/{BAD_ID}").status_code == 404
+
+    # Domain catch-all: favicon.ico and bad domain
+    assert client.get("/favicon.ico").status_code == 404
+    assert client.get("/nonexistent_domain").status_code == 404
+
     # --- Phase edit-modal: move phase to different project ---
     client.post(f"/{domain_name}/project/new",
                 data={'name': 'move_target_proj', 'description': ''})
@@ -957,3 +984,192 @@ def test_ui_crud_exceptions(full_app_create):
     assert "alert-success" in mismatch_edit.text
     updated_task2 = db.get_task_by_id(task2.task_id)
     assert updated_task2.phase_id is None
+
+
+# ====================================================================
+# Stage 8: UI Router — Navigation, Detail Views, Domain, Last-Accessed
+# ====================================================================
+
+def test_ui_router_navigation_and_domain(full_app_create):
+    """Test domains list, nav tree, nav tree drill-down, and domain catch-all."""
+    setup_dict = full_app_create
+    db: ModelDB = setup_dict['db']
+    domain_name = setup_dict['domain_name']
+    client = TestClient(setup_dict['app'])
+
+    # --- /domains (full page + HTMX) ---
+    domains_response = client.get("/domains")
+    assert domains_response.status_code == 200
+    assert domain_name in domains_response.text
+
+    htmx_domains = client.get("/domains", headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_domains)
+    assert domain_name in htmx_domains.text
+
+    # --- /nav_tree (full page + HTMX) ---
+    nav_tree_response = client.get("/nav_tree")
+    assert nav_tree_response.status_code == 200
+    assert domain_name in nav_tree_response.text
+
+    htmx_nav_tree = client.get("/nav_tree", headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_nav_tree)
+    assert domain_name in htmx_nav_tree.text
+
+    # --- Create project + phase + task for nav drill-down ---
+    client.post(f"/{domain_name}/project/new",
+                data={'name': 'nav_proj', 'description': 'for nav tests'})
+    project = db.get_project_by_name('nav_proj')
+    assert project is not None
+
+    client.post(f"/{domain_name}/project/{project.project_id}/phase/new",
+                data={'name': 'nav_phase', 'description': ''})
+    phase = db.get_phase_by_name('nav_phase')
+    assert phase is not None
+
+    client.post(f"/{domain_name}/phase/{phase.phase_id}/task/new",
+                data={'name': 'nav_task', 'status': 'ToDo', 'description': ''})
+    task = db.get_task_by_name('nav_task')
+    assert task is not None
+
+    # --- Nav tree drill-down ---
+    nav_projects = client.get(f"/nav/{domain_name}/projects")
+    assert nav_projects.status_code == 200
+    assert "nav_proj" in nav_projects.text
+
+    nav_children = client.get(f"/nav/{domain_name}/project/{project.project_id}/children")
+    assert nav_children.status_code == 200
+    assert "nav_phase" in nav_children.text
+
+    nav_tasks = client.get(f"/nav/{domain_name}/phase/{phase.phase_id}/tasks")
+    assert nav_tasks.status_code == 200
+    assert "nav_task" in nav_tasks.text
+
+    # --- Domain catch-all (full page + HTMX) ---
+    domain_response = client.get(f"/{domain_name}")
+    assert domain_response.status_code == 200
+    assert "nav_proj" in domain_response.text
+
+    htmx_domain = client.get(f"/{domain_name}", headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_domain)
+    assert "nav_proj" in htmx_domain.text
+
+
+def test_ui_router_last_accessed(full_app_create):
+    """Test /last/project/, /last/phase/, /last/task/ routes."""
+    setup_dict = full_app_create
+    db: ModelDB = setup_dict['db']
+    domain_name = setup_dict['domain_name']
+    client = TestClient(setup_dict['app'], follow_redirects=False)
+
+    # --- With no last-accessed state, /last/* should redirect to /domains ---
+    for path in ('/last/project/', '/last/phase/', '/last/task/'):
+        response = client.get(path)
+        assert response.status_code == 307
+        assert '/domains' in response.headers['location']
+
+    # --- Create project + phase + task, then visit their detail pages to
+    #     set the last-accessed state ---
+    follow_client = TestClient(setup_dict['app'])
+
+    follow_client.post(f"/{domain_name}/project/new",
+                       data={'name': 'last_proj', 'description': ''})
+    project = db.get_project_by_name('last_proj')
+    assert project is not None
+
+    follow_client.post(f"/{domain_name}/project/{project.project_id}/phase/new",
+                       data={'name': 'last_phase', 'description': ''})
+    phase = db.get_phase_by_name('last_phase')
+    assert phase is not None
+
+    follow_client.post(f"/{domain_name}/phase/{phase.phase_id}/task/new",
+                       data={'name': 'last_task', 'status': 'ToDo', 'description': ''})
+    task = db.get_task_by_name('last_task')
+    assert task is not None
+
+    # Visit detail pages to set last-accessed state
+    follow_client.get(f"/{domain_name}/project/{project.project_id}")
+    follow_client.get(f"/{domain_name}/phase/{phase.phase_id}")
+    follow_client.get(f"/{domain_name}/task/{task.task_id}")
+
+    # --- Now /last/* should return the detail pages ---
+    last_proj = follow_client.get('/last/project/')
+    assert last_proj.status_code == 200
+    assert 'last_proj' in last_proj.text
+
+    htmx_last_proj = follow_client.get('/last/project/', headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_last_proj)
+    assert 'last_proj' in htmx_last_proj.text
+
+    last_phase = follow_client.get('/last/phase/')
+    assert last_phase.status_code == 200
+    assert 'last_phase' in last_phase.text
+
+    htmx_last_phase = follow_client.get('/last/phase/', headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_last_phase)
+    assert 'last_phase' in htmx_last_phase.text
+
+    last_task = follow_client.get('/last/task/')
+    assert last_task.status_code == 200
+    assert 'last_task' in last_task.text
+
+    htmx_last_task = follow_client.get('/last/task/', headers=HTMX_HEADERS)
+    assert_is_fragment(htmx_last_task)
+    assert 'last_task' in htmx_last_task.text
+
+    # --- Delete entities and verify /last/* returns 404 ---
+    task.delete_from_db()
+    assert follow_client.get('/last/task/').status_code == 404
+
+    phase.delete_from_db()
+    assert follow_client.get('/last/phase/').status_code == 404
+
+    project.delete_from_db()
+    assert follow_client.get('/last/project/').status_code == 404
+
+
+# ====================================================================
+# Stage 9: Standalone UI Router — Home and Status
+# ====================================================================
+
+def test_standalone_home_and_status(full_app_create):
+    """Test the standalone home page and status-partial routes."""
+    setup_dict = full_app_create
+    db: ModelDB = setup_dict['db']
+    domain_name = setup_dict['domain_name']
+    client = TestClient(setup_dict['app'])
+
+    # --- Home page with no last-accessed state ---
+    home_response = client.get("/")
+    assert home_response.status_code == 200
+    assert "Welcome" in home_response.text
+
+    # --- Create and visit entities to populate last-accessed state ---
+    client.post(f"/{domain_name}/project/new",
+                data={'name': 'home_proj', 'description': ''})
+    project = db.get_project_by_name('home_proj')
+    assert project is not None
+
+    client.post(f"/{domain_name}/project/{project.project_id}/phase/new",
+                data={'name': 'home_phase', 'description': ''})
+    phase = db.get_phase_by_name('home_phase')
+    assert phase is not None
+
+    client.post(f"/{domain_name}/phase/{phase.phase_id}/task/new",
+                data={'name': 'home_task', 'status': 'ToDo', 'description': ''})
+    task = db.get_task_by_name('home_task')
+    assert task is not None
+
+    # Visit detail pages to set last-accessed state
+    client.get(f"/{domain_name}/project/{project.project_id}")
+    client.get(f"/{domain_name}/phase/{phase.phase_id}")
+    client.get(f"/{domain_name}/task/{task.task_id}")
+
+    # --- Home page now shows last-accessed items ---
+    home_with_state = client.get("/")
+    assert home_with_state.status_code == 200
+    assert 'home_proj' in home_with_state.text
+
+    # --- Status partial ---
+    status_response = client.get("/status-partial")
+    assert status_response.status_code == 200
+    assert "running" in status_response.text

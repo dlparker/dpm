@@ -1,0 +1,43 @@
+{% extends "pm_base.html" %}
+
+{% block title %}SW Nav Epic Children{% endblock %}
+
+{% block sb_main_content %}
+{% if stories %}
+<ul class="space-y-0.5">
+    {% for story in stories %}
+    <li>
+        <div
+            class="tree-toggle flex items-center gap-1 px-2 py-1 rounded hover:bg-base-300 cursor-pointer"
+            hx-get="{{ url_for('sw:nav-story-tasks', domain=domain, story_id=story.story_id) }}"
+            hx-target="#sw-nav-story-{{ story.story_id }}-tasks"
+            hx-swap="innerHTML"
+            hx-trigger="click once"
+            onclick="toggleTreeNode(this)"
+        >
+            <svg class="tree-icon w-3 h-3 shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+            <span class="badge badge-warning badge-xs">St</span>
+            <span class="truncate" title="{{ story.name }}">{{ story.name }}</span>
+            <a href="{{ url_for('sw:story', domain=domain, story_id=story.story_id) }}"
+               class="ml-auto opacity-50 hover:opacity-100"
+               onclick="event.stopPropagation()"
+               title="View story">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                </svg>
+            </a>
+        </div>
+        <div id="sw-nav-story-{{ story.story_id }}-tasks" class="tree-children tree-node hidden pl-3">
+            <div class="flex items-center gap-1 px-2 py-1 text-base-content/50">
+                <span class="loading loading-spinner loading-xs"></span>
+            </div>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="text-xs text-base-content/50 px-2 py-1">No stories</p>
+{% endif %}
+{% endblock %}

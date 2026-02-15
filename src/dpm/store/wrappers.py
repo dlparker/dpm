@@ -568,6 +568,7 @@ class ModelDB:
             return record
 
     def delete_task_record(self, record):
+        self.sw_model_db.delete_sw_overlay_for_task(record.task_id)
         with Session(self.engine) as session:
             task = session.exec(select(Task).where(Task.id == record.task_id)).first()
             if task:
@@ -758,6 +759,7 @@ class ModelDB:
         for child in children:
             child.delete_from_db()
 
+        self.sw_model_db.delete_sw_overlay_for_project(record.project_id)
         with Session(self.engine) as session:
             project = session.exec(select(Project).where(Project.id == record.project_id)).first()
             if project:
@@ -915,6 +917,7 @@ class ModelDB:
         return record
 
     def delete_phase_record(self, record):
+        self.sw_model_db.delete_sw_overlay_for_phase(record.phase_id)
         with Session(self.engine) as session:
             phase = session.exec(select(Phase).where(Phase.id == record.phase_id)).first()
             if phase:

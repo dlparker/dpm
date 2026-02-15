@@ -21,6 +21,7 @@ from dpm.fastapi.dpm.api_router import PMDBAPIService
 from dpm.fastapi.dpm.ui_router import PMDBUIRouter
 from dpm.fastapi.dpm.ui_crud_router import PMDBCrudRouter
 from dpm.fastapi.dpm.ui_kanban_router import PMDBKanbanRouter
+from dpm.fastapi.sw.ui_router import SWUIRouter
 from dpm.fastapi.standalone.ui_router import UIRouter
 
 logger = logging.getLogger("dpm fastapi server")
@@ -28,7 +29,8 @@ logger = logging.getLogger("dpm fastapi server")
 app_root = Path(__file__).parent.resolve()
 template_paths = {
     'standalone': str(app_root / "standalone" / "templates"),
-    'dpm': str(app_root / "dpm"/ "templates")
+    'dpm': str(app_root / "dpm"/ "templates"),
+    'sw': str(app_root / "sw" / "templates"),
 }
 
 class DPMServer(ServerOps):
@@ -44,6 +46,7 @@ class DPMServer(ServerOps):
             loader=ChoiceLoader([
                 FileSystemLoader(template_paths['standalone']),  # Standalone base.html, etc.
                 FileSystemLoader(template_paths['dpm']),
+                FileSystemLoader(template_paths['sw']),
             ]),
             autoescape=select_autoescape("html", "jinja2"),
             # Optional: add other env settings like trim_blocks=True, lstrip_blocks=True
@@ -54,6 +57,7 @@ class DPMServer(ServerOps):
         self.pmui_router = PMDBUIRouter(self, self.dpm_manager)
         self.pmui_crud_router = PMDBCrudRouter(self, self.dpm_manager)
         self.pmui_kanban_router = PMDBKanbanRouter(self, self.dpm_manager)
+        self.sw_ui_router = SWUIRouter(self, self.dpm_manager)
         self.main_router = UIRouter(self, self.dpm_manager)
         self.title = "DPM"
         self.description = "Task management "
@@ -65,6 +69,7 @@ class DPMServer(ServerOps):
         self.app.include_router(self.main_router.become_router())
         self.app.include_router(self.pmui_crud_router.become_router())
         self.app.include_router(self.pmui_kanban_router.become_router())
+        self.app.include_router(self.sw_ui_router.become_router())
         self.app.include_router(self.pmui_router.become_router())
         self.app.include_router(self.pmdb_service.become_router(), prefix="/api")
         self.tap_focus = None

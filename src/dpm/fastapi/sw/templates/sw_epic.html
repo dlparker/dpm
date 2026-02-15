@@ -1,0 +1,70 @@
+{% extends "pm_sb_base.html" %}
+
+{% block title %}Epic - {{ epic.name }}{% endblock %}
+
+{% block sb_main_content %}
+<main class="flex-1 p-6">
+    <div class="flex items-center gap-4 mb-4">
+        <a href="{{ url_for('sw:domain', domain=domain) }}" class="inline-flex items-center gap-2 link link-hover">
+            <span class="badge badge-neutral badge-sm">Domain</span>
+            {{ domain }}
+        </a>
+    </div>
+
+    <div class="flex items-center gap-2 mb-6">
+        <span class="badge badge-info">Epic</span>
+        <h1 class="text-2xl font-bold">{{ epic.name }}</h1>
+        {% include "sw_guardrail_badge.html" %}
+    </div>
+
+    {% if epic.description %}
+    <div class="mb-6">
+        <h2 class="text-sm font-medium text-base-content/60 mb-1">Description</h2>
+        <p class="text-base-content">{{ epic.description }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Stories -->
+    <div class="mb-6">
+        <h2 class="text-sm font-medium text-base-content/60 mb-2">Stories</h2>
+        {% if stories %}
+        <ul class="space-y-1">
+            {% for story in stories %}
+            <li class="flex items-center gap-2 p-2 rounded-lg bg-base-200">
+                <span class="badge badge-warning badge-sm">Story</span>
+                <a href="{{ url_for('sw:story', domain=domain, story_id=story.story_id) }}"
+                   class="link link-hover font-medium">{{ story.name }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-base-content/50 italic text-sm">No stories</p>
+        {% endif %}
+    </div>
+
+    <!-- Direct Tasks -->
+    <div class="mb-6">
+        <h2 class="text-sm font-medium text-base-content/60 mb-2">Direct Tasks</h2>
+        {% if tasks %}
+        <ul class="space-y-1">
+            {% for task in tasks %}
+            <li class="flex items-center gap-2 p-2 rounded-lg bg-base-200">
+                <span class="badge badge-ghost badge-sm">Task</span>
+                <a href="{{ url_for('sw:task', domain=domain, swtask_id=task.swtask_id) }}"
+                   class="link link-hover font-medium">{{ task.name }}</a>
+                {% if task.status == 'Done' %}
+                <span class="badge badge-success badge-xs">Done</span>
+                {% elif task.status == 'InProgress' %}
+                <span class="badge badge-warning badge-xs">In Progress</span>
+                {% else %}
+                <span class="badge badge-ghost badge-xs">{{ task.status }}</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-base-content/50 italic text-sm">No direct tasks</p>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}
