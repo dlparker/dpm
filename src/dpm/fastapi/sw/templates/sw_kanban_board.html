@@ -1,0 +1,305 @@
+{% extends "pm_sb_base.html" %}
+
+{% block title %}SW Kanban Board{% endblock %}
+
+{% block extra_head %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<style>
+    .sortable-ghost {
+        opacity: 0.4;
+        background: hsl(var(--p) / 0.2);
+    }
+    .sortable-chosen {
+        background: hsl(var(--b3));
+    }
+    .kanban-card {
+        cursor: grab;
+    }
+    .kanban-card:active {
+        cursor: grabbing;
+    }
+</style>
+{% endblock %}
+
+{% block sb_main_content %}
+<main class="flex-1 p-6">
+    <div class="mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h1 class="text-2xl font-bold">SW Kanban Board</h1>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+            <!-- Epic filter -->
+            <div class="dropdown">
+                <label tabindex="0" class="btn btn-sm btn-outline gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                    </svg>
+                    SELECT BY EPIC
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </label>
+                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-64 max-h-60 overflow-y-auto">
+                    <li>
+                        <a href="#" onclick="event.preventDefault(); document.activeElement.blur(); setEpicFilter(null, 'All Epics');">
+                            All Epics
+                        </a>
+                    </li>
+                    {% for epic in epics %}
+                    <li>
+                        <a href="#"
+                           data-epic-id="{{ epic.epic_id }}"
+                           data-epic-name="{{ epic.name|e }}"
+                           onclick="event.preventDefault(); document.activeElement.blur(); setEpicFilter(parseInt(this.dataset.epicId), this.dataset.epicName);">
+                            {{ epic.name }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Story filter (populated dynamically) -->
+            <div class="dropdown" id="story-dropdown">
+                <label tabindex="0" class="btn btn-sm btn-outline gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                    SELECT BY STORY
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </label>
+                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-64 max-h-60 overflow-y-auto" id="story-options">
+                    <li><span class="text-base-content/50 px-4 py-2 text-sm">Select an epic first</span></li>
+                </ul>
+            </div>
+
+            <!-- Selected filter indicators -->
+            <div id="selected-filters" class="flex gap-2"></div>
+        </div>
+    </div>
+
+    <!-- Kanban columns container -->
+    <div id="board-columns"
+         hx-get="{{ url_for('sw:board-columns', domain=domain) }}{% if selected_epic %}?epic_id={{ selected_epic.epic_id }}{% if selected_story %}&story_id={{ selected_story.story_id }}{% endif %}{% endif %}"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+        <div class="flex justify-center p-8">
+            <span class="loading loading-spinner loading-lg"></span>
+        </div>
+    </div>
+
+    <!-- Toast message container -->
+    <div id="board-message" class="toast toast-end toast-bottom z-50"></div>
+
+    <!-- Edit modal container -->
+    <div id="edit-modal-container"></div>
+</main>
+
+<script>
+    const baseColumnsUrl = '{{ url_for("sw:board-columns", domain=domain) }}';
+    const baseStoryOptionsUrl = '{{ url_for("sw:board-story-options", domain=domain) }}';
+    const moveTaskUrl = '{{ url_for("sw:board-move-task", domain=domain) }}';
+
+    let currentEpicId = {{ selected_epic.epic_id|tojson if selected_epic else 'null' }};
+    let currentEpicName = {{ selected_epic.name|tojson if selected_epic else 'null' }};
+    let currentStoryId = {{ selected_story.story_id|tojson if selected_story else 'null' }};
+    let currentStoryName = {{ selected_story.name|tojson if selected_story else 'null' }};
+
+    function getColumnsUrl() {
+        let url = baseColumnsUrl;
+        const params = [];
+        if (currentEpicId) params.push('epic_id=' + currentEpicId);
+        if (currentStoryId) params.push('story_id=' + currentStoryId);
+        if (params.length > 0) url += '?' + params.join('&');
+        return url;
+    }
+
+    function updateBoardColumnsUrl() {
+        const boardColumns = document.getElementById('board-columns');
+        boardColumns.setAttribute('hx-get', getColumnsUrl());
+        htmx.process(boardColumns);
+    }
+
+    function refreshBoard() {
+        updateBoardColumnsUrl();
+        htmx.ajax('GET', getColumnsUrl(), {
+            target: '#board-columns',
+            swap: 'innerHTML'
+        });
+    }
+
+    function setEpicFilter(epicId, epicName) {
+        currentEpicId = epicId;
+        currentEpicName = epicName;
+        currentStoryId = null;
+        currentStoryName = null;
+        updateFilterBadges();
+        updateStoryDropdown();
+        refreshBoard();
+    }
+
+    function setStoryFilter(storyId, storyName) {
+        currentStoryId = storyId;
+        currentStoryName = storyName;
+        updateFilterBadges();
+        refreshBoard();
+    }
+
+    function clearEpicFilter() {
+        currentEpicId = null;
+        currentEpicName = null;
+        currentStoryId = null;
+        currentStoryName = null;
+        updateFilterBadges();
+        updateStoryDropdown();
+        refreshBoard();
+    }
+
+    function clearStoryFilter() {
+        currentStoryId = null;
+        currentStoryName = null;
+        updateFilterBadges();
+        refreshBoard();
+    }
+
+    function updateFilterBadges() {
+        const container = document.getElementById('selected-filters');
+        let html = '';
+
+        if (currentEpicId && currentEpicName) {
+            html += `<div class="badge badge-info gap-1">
+                ${escapeHtml(currentEpicName)}
+                <a onclick="clearEpicFilter();" class="cursor-pointer">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </a>
+            </div>`;
+        }
+
+        if (currentStoryId && currentStoryName) {
+            html += `<div class="badge badge-warning gap-1">
+                ${escapeHtml(currentStoryName)}
+                <a onclick="clearStoryFilter();" class="cursor-pointer">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </a>
+            </div>`;
+        }
+
+        container.innerHTML = html;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function updateStoryDropdown() {
+        const storyOptions = document.getElementById('story-options');
+        if (!currentEpicId) {
+            storyOptions.innerHTML = '<li><span class="text-base-content/50 px-4 py-2 text-sm">Select an epic first</span></li>';
+            return;
+        }
+
+        htmx.ajax('GET', baseStoryOptionsUrl + '?epic_id=' + currentEpicId, {
+            target: '#story-options',
+            swap: 'innerHTML'
+        });
+    }
+
+    function showMessage(success, message) {
+        const container = document.getElementById('board-message');
+        const alertClass = success ? 'alert-success' : 'alert-error';
+        container.innerHTML = `
+            <div class="alert ${alertClass}">
+                <span>${message}</span>
+            </div>
+        `;
+        setTimeout(() => {
+            container.innerHTML = '';
+        }, 3000);
+    }
+
+    function closeModal() {
+        const container = document.getElementById('edit-modal-container');
+        if (container) container.innerHTML = '';
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateBoardColumnsUrl();
+        updateFilterBadges();
+        if (currentEpicId) {
+            updateStoryDropdown();
+        }
+    });
+
+    // Initialize Sortable on columns after HTMX loads them
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        if (evt.detail.target.id === 'board-columns') {
+            initSortable();
+        }
+    });
+
+    // Intercept refresh-board event to use current filters
+    document.body.addEventListener('refresh-board', function(evt) {
+        evt.preventDefault();
+        refreshBoard();
+    });
+
+    // Close modal event
+    document.body.addEventListener('close-modal', function(evt) {
+        closeModal();
+    });
+
+    function initSortable() {
+        document.querySelectorAll('.kanban-column').forEach(column => {
+            new Sortable(column, {
+                group: 'kanban',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                onEnd: function(evt) {
+                    const taskId = evt.item.dataset.taskId;
+                    const newStatus = evt.to.dataset.status;
+                    const oldStatus = evt.from.dataset.status;
+
+                    if (newStatus === oldStatus) {
+                        return;
+                    }
+
+                    // Client-side blocker check
+                    let blockers = [];
+                    try {
+                        const blockersJson = evt.item.dataset.blockers;
+                        if (blockersJson) {
+                            blockers = JSON.parse(blockersJson);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing blockers JSON:', e);
+                    }
+
+                    if ((newStatus === 'Doing' || newStatus === 'Done') && blockers.length > 0) {
+                        evt.from.insertBefore(evt.item, evt.from.children[evt.oldIndex] || null);
+                        showMessage(false, 'Cannot move: blocked by ' + blockers.map(b => b.name).join(', '));
+                        return;
+                    }
+
+                    htmx.ajax('POST', moveTaskUrl, {
+                        values: { task_id: taskId, new_status: newStatus },
+                        swap: 'innerHTML',
+                        target: '#board-message'
+                    });
+                }
+            });
+        });
+    }
+</script>
+{% endblock %}

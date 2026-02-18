@@ -1,0 +1,28 @@
+<dialog id="sw-create-modal" class="modal modal-open">
+    <div class="modal-box max-w-lg">
+        <h3 class="font-bold text-lg mb-4">Add Item</h3>
+
+        <div class="form-control w-full mb-4">
+            <label class="label" for="sw-type-picker">
+                <span class="label-text font-medium">Type</span>
+            </label>
+            <select id="sw-type-picker"
+                    class="select select-bordered w-full"
+                    onchange="if(this.value) htmx.ajax('GET', this.value, '#sw-create-form-area')">
+                <option value="" disabled selected>Select a type...</option>
+                {% for t in sw_types %}
+                <option value="{{ url_for('sw:create-form', domain=domain, sw_type=t) }}?parent_type={{ parent_type|default('', true) }}&parent_id={{ parent_id|default(0, true) }}">
+                    {{ t | capitalize }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div id="sw-create-form-area"></div>
+
+        <div class="modal-action">
+            <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+    <div class="modal-backdrop" onclick="closeModal()"></div>
+</dialog>

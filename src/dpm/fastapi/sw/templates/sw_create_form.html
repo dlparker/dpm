@@ -1,0 +1,58 @@
+<form hx-post="{{ url_for('sw:create-submit', domain=domain) }}"
+      hx-target="#sw-create-form-result"
+      hx-swap="innerHTML"
+      class="space-y-4">
+
+    <input type="hidden" name="sw_type" value="{{ sw_type }}" />
+    <input type="hidden" name="parent_type" value="{{ parent_type|default('', true) }}" />
+    <input type="hidden" name="parent_id" value="{{ parent_id|default(0, true) }}" />
+
+    <div class="form-control w-full">
+        <label class="label" for="sw-create-name">
+            <span class="label-text font-medium">Name <span class="text-error">*</span></span>
+        </label>
+        <input type="text"
+               id="sw-create-name"
+               name="name"
+               class="input input-bordered w-full"
+               placeholder="{{ sw_type | capitalize }} name"
+               required />
+    </div>
+
+    <div class="form-control w-full">
+        <label class="label" for="sw-create-description">
+            <span class="label-text font-medium">Description</span>
+        </label>
+        <textarea id="sw-create-description"
+                  name="description"
+                  class="textarea textarea-bordered w-full h-20"
+                  placeholder="Optional description"
+                  rows="2"></textarea>
+    </div>
+
+    {% if guardrail_types %}
+    <div class="form-control w-full">
+        <label class="label" for="sw-create-guardrail">
+            <span class="label-text font-medium">Guardrail Type</span>
+        </label>
+        <select id="sw-create-guardrail"
+                name="guardrail_type"
+                class="select select-bordered w-full">
+            {% for gt in guardrail_types %}
+            <option value="{{ gt.value }}" {% if gt.value == "production" %}selected{% endif %}>
+                {{ gt.value | upper }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    {% endif %}
+
+    <button type="submit" class="btn btn-primary w-full">
+        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        Create {{ sw_type | capitalize }}
+    </button>
+
+    <div id="sw-create-form-result"></div>
+</form>

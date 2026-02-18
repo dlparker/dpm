@@ -9,7 +9,11 @@
     <li>
         <div
             class="tree-toggle flex items-center gap-1 px-2 py-1 rounded hover:bg-base-300 cursor-pointer"
+            {% if domain.domain_mode == "software" %}
+            hx-get="{{ url_for('sw:nav-domain-items', domain=domain.name) }}"
+            {% else %}
             hx-get="{{ url_for('pm:nav-domain-projects', domain=domain.name) }}"
+            {% endif %}
             hx-target="#nav-domain-{{ loop.index }}-children"
             hx-swap="innerHTML"
             hx-trigger="click once"
@@ -18,7 +22,16 @@
             <svg class="tree-icon w-3 h-3 shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
             </svg>
+            {% if domain.domain_mode == "software" %}<span class="badge badge-info badge-xs">SW</span>{% endif %}
             <span class="font-medium truncate" title="{{ domain.name }}">{{ domain.name }}</span>
+            <a href="{{ url_for('pm:domain', domain=domain.name) }}"
+               class="ml-auto opacity-50 hover:opacity-100"
+               onclick="event.stopPropagation()"
+               title="View domain details">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                </svg>
+            </a>
         </div>
         <div id="nav-domain-{{ loop.index }}-children" class="tree-children tree-node hidden pl-3">
             <div class="flex items-center gap-1 px-2 py-1 text-base-content/50">

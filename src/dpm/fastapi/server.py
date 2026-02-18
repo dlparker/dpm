@@ -22,6 +22,7 @@ from dpm.fastapi.dpm.ui_router import PMDBUIRouter
 from dpm.fastapi.dpm.ui_crud_router import PMDBCrudRouter
 from dpm.fastapi.dpm.ui_kanban_router import PMDBKanbanRouter
 from dpm.fastapi.sw.ui_router import SWUIRouter
+from dpm.fastapi.sw.ui_kanban_router import SWKanbanRouter
 from dpm.fastapi.standalone.ui_router import UIRouter
 
 logger = logging.getLogger("dpm fastapi server")
@@ -58,6 +59,7 @@ class DPMServer(ServerOps):
         self.pmui_crud_router = PMDBCrudRouter(self, self.dpm_manager)
         self.pmui_kanban_router = PMDBKanbanRouter(self, self.dpm_manager)
         self.sw_ui_router = SWUIRouter(self, self.dpm_manager)
+        self.sw_kanban_router = SWKanbanRouter(self, self.dpm_manager)
         self.main_router = UIRouter(self, self.dpm_manager)
         self.title = "DPM"
         self.description = "Task management "
@@ -69,6 +71,7 @@ class DPMServer(ServerOps):
         self.app.include_router(self.main_router.become_router())
         self.app.include_router(self.pmui_crud_router.become_router())
         self.app.include_router(self.pmui_kanban_router.become_router())
+        self.app.include_router(self.sw_kanban_router.become_router())
         self.app.include_router(self.sw_ui_router.become_router())
         self.app.include_router(self.pmui_router.become_router())
         self.app.include_router(self.pmdb_service.become_router(), prefix="/api")

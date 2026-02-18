@@ -7,6 +7,23 @@
     <div class="flex items-center gap-2 mb-6">
         <span class="badge badge-neutral">Software Domain</span>
         <h1 class="text-2xl font-bold">{{ domain }}</h1>
+        <a href="{{ url_for('sw:board', domain=domain) }}"
+           class="btn btn-outline btn-xs ml-auto gap-1"
+           title="Kanban Board">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"></path>
+            </svg>
+            Board
+        </a>
+        <button hx-get="{{ url_for('sw:create-modal', domain=domain) }}"
+                hx-target="#edit-modal-container"
+                hx-swap="innerHTML"
+                class="btn btn-ghost btn-xs"
+                title="Add item">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+        </button>
     </div>
 
     <!-- Visions -->

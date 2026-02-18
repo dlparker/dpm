@@ -6,7 +6,10 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from dpm.fastapi.ops import ServerOps
 from dpm.store.wrappers import ModelDB
-from dpm.store.domains import DomainMode, DPMManager
+from dpm.store.domains import DomainMode, DPMManager, PMDBDomain
+from dpm.store.sw_wrappers import (
+    VisionRecord, SubsystemRecord, DeliverableRecord, EpicRecord,
+)
 
 logger = logging.getLogger("UIRouter")
 
@@ -22,6 +25,12 @@ class PMDBUIRouter:
     def _get_db(self, domain: str) -> ModelDB:
         return self.dpm_manager.get_db_for_domain(domain)
 
+    def _get_domain_info(self, domain: str) -> PMDBDomain:
+        return self.dpm_manager.get_domains()[domain]
+
+    def _is_sw_domain(self, domain: str) -> bool:
+        return self._get_domain_info(domain).domain_mode == DomainMode.SOFTWARE
+
     def become_router(self) -> APIRouter:
         router = APIRouter()
 
@@ -33,27 +42,29 @@ class PMDBUIRouter:
         async def pm_domains(request: Request) -> Response:
 
             domains = [
-                {"name": name, "description": item.description}
+                {"name": name, "description": item.description,
+                 "domain_mode": item.domain_mode.value if item.domain_mode else "default"}
                 for name, item in self.dpm_manager.get_domains().items()
             ]
             context = {"request": request, "domains": domains}
             is_htmx = request.headers.get("HX-Request") == "true"
             if is_htmx:
                 return self.templates.TemplateResponse(
-                    "pm_domains.html",
+                    "pm_domains_tree.html",
                     context,
                     block_name="sb_main_content"
                 )
             else:
                 return self.templates.TemplateResponse(
-                    "pm_domains.html",
+                    "pm_domains_tree.html",
                     context
                 )
 
         @router.get("/nav_tree", response_class=HTMLResponse, name="pm:nav_tree")
         async def pm_nav_tree(request: Request) -> Response:
             domains = [
-                {"name": name, "description": item.description}
+                {"name": name, "description": item.description,
+                 "domain_mode": item.domain_mode.value if item.domain_mode else "default"}
                 for name, item in self.dpm_manager.get_domains().items()
             ]
             context = {"request": request, "domains": domains}
@@ -235,6 +246,28 @@ class PMDBUIRouter:
             project = db.get_project_by_id(project_id)
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found")
+
+            # Redirect to SW detail page if this project has an SW overlay
+            if self._is_sw_domain(domain):
+                sw = db.sw_model_db
+                wrapped = sw.wrap_project(project)
+                if isinstance(wrapped, VisionRecord):
+                    return RedirectResponse(
+                        url=request.url_for("sw:vision", domain=domain, vision_id=wrapped.vision_id),
+                        status_code=307)
+                if isinstance(wrapped, SubsystemRecord):
+                    return RedirectResponse(
+                        url=request.url_for("sw:subsystem", domain=domain, subsystem_id=wrapped.subsystem_id),
+                        status_code=307)
+                if isinstance(wrapped, DeliverableRecord):
+                    return RedirectResponse(
+                        url=request.url_for("sw:deliverable", domain=domain, deliverable_id=wrapped.deliverable_id),
+                        status_code=307)
+                if isinstance(wrapped, EpicRecord):
+                    return RedirectResponse(
+                        url=request.url_for("sw:epic", domain=domain, epic_id=wrapped.epic_id),
+                        status_code=307)
+
             self.dpm_manager.set_last_project(domain, project)
 
             context =  {
@@ -353,6 +386,15 @@ class PMDBUIRouter:
             phase = db.get_phase_by_id(phase_id)
             if not phase:
                 raise HTTPException(status_code=404, detail="Phase not found")
+
+            # Redirect to SW story page if this phase has an SW overlay
+            if self._is_sw_domain(domain):
+                story = db.sw_model_db.get_story_for_phase(phase_id)
+                if story:
+                    return RedirectResponse(
+                        url=request.url_for("sw:story", domain=domain, story_id=story.story_id),
+                        status_code=307)
+
             self.dpm_manager.set_last_phase(domain, phase)
 
             context =  {
@@ -379,6 +421,15 @@ class PMDBUIRouter:
             task = db.get_task_by_id(task_id)
             if not task:
                 raise HTTPException(status_code=404, detail="Task not found")
+
+            # Redirect to SW task page if this task has an SW overlay
+            if self._is_sw_domain(domain):
+                swtask = db.sw_model_db.get_swtask_for_task(task_id)
+                if swtask:
+                    return RedirectResponse(
+                        url=request.url_for("sw:task", domain=domain, swtask_id=swtask.swtask_id),
+                        status_code=307)
+
             self.dpm_manager.set_last_task(domain, task)
 
             blockers = task.get_blockers(only_not_done=False)
